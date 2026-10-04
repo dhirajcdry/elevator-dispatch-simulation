@@ -100,6 +100,25 @@ class MoveTest(unittest.TestCase):
 
 
 class TripTest(unittest.TestCase):
+    def test_move_to_goes_straight_there_but_never_reverses_with_riders(self):
+        car = Elevator(id=0, capacity=10, floor=5)
+        car.move_to(9)
+        self.assertEqual(car.floor, 9)
+        alice = Passenger('alice', request_time=0, source=9, destination=20)
+        car.assign(alice)
+        car.pick_up(alice, time=0)
+        with self.assertRaises(ValueError):
+            car.move_to(3)
+
+    def test_rider_destinations(self):
+        car = Elevator(id=0, capacity=10, floor=1)
+        self.assertEqual(car.rider_destinations, [])
+        for name, destination in (('alice', 9), ('bob', 4)):
+            passenger = Passenger(name, request_time=0, source=1, destination=destination)
+            car.assign(passenger)
+            car.pick_up(passenger, time=0)
+        self.assertEqual(car.rider_destinations, [9, 4])
+
     def test_passenger_count_is_riders_plus_waiting(self):
         car = Elevator(id=0, capacity=10)
         alice = Passenger('alice', request_time=0, source=1, destination=5)

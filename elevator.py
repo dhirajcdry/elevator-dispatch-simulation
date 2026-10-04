@@ -31,6 +31,11 @@ class Elevator:
         return len(self.riders) + len(self.waiting)
 
     @property
+    def rider_destinations(self) -> list[int]:
+        """The floor each rider aboard is going to."""
+        return [rider.destination for rider in self.riders]
+
+    @property
     def last_drop_off(self) -> int | None:
         """The farthest rider destination in the car's direction: where its current trip ends.
 
@@ -38,10 +43,9 @@ class Elevator:
         """
         if not self.riders:
             return None
-        destinations = [rider.destination for rider in self.riders]
         if self.direction == 'up':
-            return max(destinations)
-        return min(destinations)
+            return max(self.rider_destinations)
+        return min(self.rider_destinations)
 
     def is_ahead(self, floor: int, direction: str) -> bool:
         """Going up: is the floor above the car? Going down: is it below the car?"""
@@ -93,3 +97,12 @@ class Elevator:
             self.floor += 1
         else:
             self.floor -= 1
+
+    def move_to(self, floor: int) -> None:
+        """Go straight to a floor. Used by predictions, which count the ticks themselves."""
+        if floor == self.floor:
+            return
+        # With riders aboard, the floor must be ahead: the car never reverses.
+        if self.riders and not self.is_ahead(floor, self.direction):
+            raise ValueError(f"elevator {self.id} cannot reverse with riders aboard")
+        self.floor = floor

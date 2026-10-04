@@ -2,6 +2,8 @@
 the chosen methods, and runs the clock (Simulation), which releases requests, asks the
 methods for decisions, and logs car floors."""
 
+from collections import deque
+
 from assignment import ForecastAssignment, NearestCar, RoundRobin
 from elevator import Elevator
 from passenger import Passenger
@@ -117,7 +119,7 @@ class Simulation:
         and every service order keeps heading for the work it has left.
         """
         positions = []
-        upcoming = list(self.passengers)  # requests not yet made
+        upcoming = deque(self.passengers)  # requests not yet made
         time = 0
 
         while True:
@@ -127,7 +129,7 @@ class Simulation:
 
             # 2. Release requests made at this tick and assign each one immediately.
             while upcoming and upcoming[0].request_time <= time:
-                passenger = upcoming.pop(0)
+                passenger = upcoming.popleft()
                 car = self.assignment.choose(self.elevators, passenger, time)
                 car.assign(passenger)
                 self.service_order.plan_pickup(car, passenger, time)

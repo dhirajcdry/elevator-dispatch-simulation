@@ -7,6 +7,13 @@ and every tick answers two questions about one car, in this order:
   next_target(car)  - the floor to head for, or None to stay put
 The simulation carries out the answers with car.pick_up and car.move_one_floor_toward.
 Drop-offs are not a choice: riders get off when the car reaches their floor.
+
+Predictions (predict_finish_times) play one car forward on a copy. For that, each option
+also answers:
+  possible_stops(car) - floors where the car may have to stop next: a drop-off,
+                        or someone who could board there
+  for_one_car(car)    - a service order holding only what a prediction for this car needs,
+                        so only that is copied
 """
 
 import copy
@@ -31,6 +38,12 @@ class RequestOrder:
 
     def next_target(self, car: Elevator) -> int | None:
         return next_target_in_order(car, car.waiting)
+
+    def possible_stops(self, car: Elevator) -> list[int]:
+        return possible_stops_in_order(car, car.waiting)
+
+    def for_one_car(self, car: Elevator) -> 'RequestOrder':
+        return RequestOrder()  # request order remembers nothing about any car
 
 
 class DirectionBased:
@@ -62,16 +75,23 @@ class DirectionBased:
         sweep = self.sweep.get(car.id)
         if sweep is None:
             return None
-        # Head for the farthest floor ahead with work: a rider's destination or a waiting passenger.
-        # The car passes every floor on the way, so drop-offs and boarding happen as it goes.
-        work_floors = [rider.destination for rider in car.riders]
-        work_floors += [passenger.source for passenger in car.waiting]
-        ahead = [floor for floor in work_floors if car.is_ahead(floor, sweep)]
-        if not ahead:
-            return car.floor
+        # Head for the farthest possible stop in the sweep's direction. The car passes every
+        # floor on the way, so drop-offs and boarding still happen as it goes.
+        # Adding the car's own floor means it stays put if nothing is ahead.
+        floors = self.possible_stops(car) + [car.floor]
         if sweep == "up":
-            return max(ahead)
-        return min(ahead)
+            return max(floors)
+        return min(floors)
+
+    def possible_stops(self, car: Elevator) -> list[int]:
+        # Anyone waiting may board as the car passes, so every waiting passenger's floor counts.
+        return car.rider_destinations + [passenger.source for passenger in car.waiting]
+
+    def for_one_car(self, car: Elevator) -> 'DirectionBased':
+        """Only this car's remembered sweep (None if it has had no work yet)."""
+        part = DirectionBased()
+        part.sweep[car.id] = self.sweep.get(car.id)
+        return part
 
     def current_sweep(self, car: Elevator) -> str | None:
         """Decide the car's sweep for this tick and remember it for next_target."""
@@ -150,6 +170,19 @@ class Forecast:
     def next_target(self, car: Elevator) -> int | None:
         return next_target_in_order(car, self.pickup_orders.get(car.id, []))
 
+    def possible_stops(self, car: Elevator) -> list[int]:
+        return possible_stops_in_order(car, self.pickup_orders.get(car.id, []))
+
+    def for_one_car(self, car: Elevator) -> 'Forecast':
+        """Only this car's pickup order, and the first forecasts of its passengers
+        (the only ones the allowed-delay check looks at)."""
+        part = Forecast(self.allowed_delay)
+        part.pickup_orders[car.id] = self.pickup_orders.get(car.id, [])
+        for passenger in car.riders + car.waiting:
+            if passenger.id in self.first_predicted_finish:
+                part.first_predicted_finish[passenger.id] = self.first_predicted_finish[passenger.id]
+        return part
+
     def place_newcomer(
         self, car: Elevator, order: list[Passenger], newcomer: Passenger, now: int
     ) -> list[Passenger]:
@@ -195,14 +228,15 @@ class Forecast:
 def who_boards_in_order(
     car: Elevator, pickup_order: list[Passenger]
 ) -> list[Passenger]:
-    """Board from the front of the pickup order: everyone here, going the same way, while there is room."""
+    """Board in pickup order, starting with the next passenger to be picked up:
+    everyone here, going the same way, while there is room."""
     boarding = []
     free_places = car.capacity - len(car.riders)
     direction = car.direction
 
     for passenger in pickup_order:
         # Stop at the first passenger who cannot board now:
-        # nobody behind them may be picked up first.
+        # nobody later in the pickup order may be picked up before them.
         if passenger.source != car.floor or free_places == 0:
             break
         if direction is not None and passenger.direction != direction:
@@ -221,12 +255,21 @@ def next_target_in_order(car: Elevator, pickup_order: list[Passenger]) -> int | 
     if car.riders:
         return car.last_drop_off
 
-    # Empty car: go to whoever is at the front of the pickup order.
+    # Empty car: go to the next passenger to be picked up.
     if pickup_order:
         return pickup_order[0].source
 
     # Nothing to do: stay put.
     return None
+
+
+def possible_stops_in_order(car: Elevator, pickup_order: list[Passenger]) -> list[int]:
+    """Every floor where a car following this pickup order may have to stop next:
+    riders' destinations, and the floor of the next passenger to be picked up.
+    Nobody later in the pickup order can board before them, so their floors are not stops yet."""
+    if pickup_order:
+        return car.rider_destinations + [pickup_order[0].source]
+    return car.rider_destinations
 
 
 def predict_finish_times(car: Elevator, service_order, time: int, newcomer: Passenger | None = None) -> dict[str, int]:
@@ -237,8 +280,9 @@ def predict_finish_times(car: Elevator, service_order, time: int, newcomer: Pass
     so the real car, passengers and service order are unchanged.
     Follows the same tick order as the simulation, starting at the pick-up step.
     """
-    # Copied together, so the copies still point at each other.
-    car, service_order, newcomer = copy.deepcopy((car, service_order, newcomer))
+    # Copy only this car and its part of the service order, never other cars.
+    # Copied together, so the copied car and order share the same copied passengers.
+    car, service_order, newcomer = copy.deepcopy((car, service_order.for_one_car(car), newcomer))
     if newcomer is not None:
         car.assign(newcomer)
         service_order.plan_pickup(car, newcomer, time)
@@ -250,8 +294,23 @@ def predict_finish_times(car: Elevator, service_order, time: int, newcomer: Pass
         if not car.riders and not car.waiting:
             return predicted_finish
         target = service_order.next_target(car)
-        if target is not None:
-            car.move_one_floor_toward(target)
-        time += 1
+        if target is None or target == car.floor:
+            time += 1  # stays put for one tick
+        else:
+            # No new requests arrive during a prediction, so nothing can happen between
+            # possible stops: go straight to the next one, counting one tick per floor.
+            # (The real simulation never does this: it moves one floor per tick.)
+            stop = next_possible_stop(car, target, service_order.possible_stops(car))
+            time += abs(stop - car.floor)
+            car.move_to(stop)
         for passenger in car.drop_off(time):
             predicted_finish[passenger.id] = time
+
+
+def next_possible_stop(car: Elevator, target: int, possible_stops: list[int]) -> int:
+    """The first possible stop between the car and its target, or the target itself."""
+    if target > car.floor:
+        on_the_way = [floor for floor in possible_stops if car.floor < floor < target]
+        return min(on_the_way + [target])  # going up: the lowest one comes first
+    on_the_way = [floor for floor in possible_stops if target < floor < car.floor]
+    return max(on_the_way + [target])  # going down: the highest one comes first
