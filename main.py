@@ -11,11 +11,11 @@ import statistics
 from assignment import NearestCar, RoundRobin
 from elevator import Elevator
 from passenger import Passenger
-from service_order import RequestOrder
+from service_order import DirectionBased, RequestOrder
 from simulation import Simulation
 
 ASSIGNMENTS = {'round-robin': RoundRobin, 'nearest': NearestCar}
-SERVICE_ORDERS = {'request': RequestOrder}
+SERVICE_ORDERS = {'request': RequestOrder, 'direction': DirectionBased}
 REQUIRED_COLUMNS = ['time', 'id', 'source', 'dest']
 
 

@@ -50,3 +50,76 @@ class RequestOrder:
 
         # Nothing to do: stay put.
         return None
+
+
+class DirectionBased:
+    """Sweep one way, picking up anyone on the way who is going that way and fits.
+
+    Turns around only when the car is empty and nothing is left ahead.
+    Ignores request order: an earlier passenger can be passed while the car fills up
+    with later ones. Protecting earlier passengers is what forecast with allowed delay adds.
+    """
+
+    def __init__(self):
+        # Each car's current sweep, by car id: 'up', 'down', or None when it has nothing to do.
+        self.sweep: dict[int, str | None] = {}
+
+    def who_boards(self, car: Elevator) -> list[Passenger]:
+        sweep = self.current_sweep(car)
+        # car.waiting is in request order, so earlier requests get the free places first.
+        going_our_way_here = [p for p in car.waiting if p.source == car.floor and p.direction == sweep]
+        free_places = car.capacity - len(car.riders)
+        return going_our_way_here[:free_places]
+
+    def next_target(self, car: Elevator) -> int | None:
+        sweep = self.current_sweep(car)
+        if sweep is None:
+            return None
+        # Head for the farthest floor ahead with work: a rider's destination or a waiting passenger.
+        # The car passes every floor on the way, so drop-offs and boarding happen as it goes.
+        work_floors = [rider.destination for rider in car.riders] + [p.source for p in car.waiting]
+        if sweep == 'up':
+            ahead = [floor for floor in work_floors if floor > car.floor]
+            return max(ahead) if ahead else car.floor
+        ahead = [floor for floor in work_floors if floor < car.floor]
+        return min(ahead) if ahead else car.floor
+
+    def current_sweep(self, car: Elevator) -> str | None:
+        """Decide the car's sweep for this tick and remember it.
+
+        Called by both who_boards and next_target; both calls give the same answer.
+        """
+        if car.riders:
+            # With riders aboard, the sweep is their direction: the car cannot reverse.
+            sweep = car.direction
+        elif not car.waiting:
+            # Empty and nobody waiting: nothing to do, so the car stays put.
+            sweep = None
+        elif self.sweep.get(car.id) is None:
+            # Was idle and has just been given work: start fresh from whoever requested first.
+            first = car.waiting[0]
+            if first.source == car.floor:
+                # Already here: go the way they want to travel, so they can board now.
+                sweep = first.direction
+            else:
+                # Elsewhere: go toward them.
+                sweep = 'up' if first.source > car.floor else 'down'
+        elif self.has_work_ahead(car, self.sweep[car.id]):
+            # Empty, but someone is waiting ahead (or here, going this way): keep going.
+            sweep = self.sweep[car.id]
+        else:
+            # Empty, and nothing left ahead: turn around.
+            sweep = 'down' if self.sweep[car.id] == 'up' else 'up'
+        self.sweep[car.id] = sweep
+        return sweep
+
+    def has_work_ahead(self, car: Elevator, sweep: str) -> bool:
+        """Is anyone waiting farther along this sweep, or here and going this way?"""
+        for passenger in car.waiting:
+            if passenger.source == car.floor and passenger.direction == sweep:
+                return True
+            if sweep == 'up' and passenger.source > car.floor:
+                return True
+            if sweep == 'down' and passenger.source < car.floor:
+                return True
+        return False
