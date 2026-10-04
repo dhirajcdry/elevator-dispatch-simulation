@@ -1,14 +1,6 @@
 # Local planning and conversation notes
 /AGENTS.md
-/docs/PLAN.md
-/docs/REQUIREMENTS.md
-/docs/DESIGN.md
-/docs/TALKING_POINTS.md
-/docs/SCENARIOS.md
-/docs/PROJECT_BRIEF.md
-/docs/RESEARCH.md
-/docs/EXPERIMENTS.md
-/docs/FINDINGS.md
+/docs/
 
 # Local browser verification artifacts
 /.playwright-mcp/
