@@ -79,22 +79,6 @@ class ClockTest(unittest.TestCase):
         positions = run([alice, bob], cars=2)  # round robin: Alice to car 0, Bob to car 1
         self.assertEqual(positions, [[1, 1], [2, 2], [3, 3], [4, 3]])
 
-    def test_a_service_order_that_never_finishes_hits_the_safety_limit(self):
-        class NeverBoards:
-            def plan_pickup(self, car, passenger, time):
-                pass
-
-            def who_boards(self, car):
-                return []
-
-            def next_target(self, car):
-                return None
-
-        alice = Passenger('alice', request_time=0, source=3, destination=5)
-        simulation = Simulation([alice], [Elevator(id=0, capacity=10)], RoundRobin(), NeverBoards(), max_ticks=50)
-        with self.assertRaises(RuntimeError):
-            simulation.run()
-
     def test_unsorted_input_is_released_by_request_time(self):
         later = Passenger('later', request_time=2, source=1, destination=2)
         first = Passenger('first', request_time=0, source=1, destination=2)

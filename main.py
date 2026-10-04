@@ -8,26 +8,22 @@ import argparse
 import csv
 import statistics
 
-from assignment import ForecastAssignment, NearestCar, RoundRobin
-from elevator import Elevator
 from passenger import Passenger
-from service_order import DEFAULT_ALLOWED_DELAY, DirectionBased, Forecast, RequestOrder
-from simulation import Simulation
+from service_order import DEFAULT_ALLOWED_DELAY
+from simulation import ASSIGNMENTS, SERVICE_ORDERS, simulate
 
-ASSIGNMENTS = {'round-robin': RoundRobin, 'nearest': NearestCar, 'forecast': ForecastAssignment}
-SERVICE_ORDERS = {'request': RequestOrder, 'direction': DirectionBased, 'forecast': Forecast}
 REQUIRED_COLUMNS = ['time', 'id', 'source', 'dest']
 
 
-def read_requests(path: str) -> list[Passenger]:
-    """Read the request CSV (time,id,source,dest) into passengers, in file order."""
+def read_requests(path: str) -> list[tuple[int, str, int, int]]:
+    """Read the request CSV into (time, id, source, dest) rows, in file order."""
     with open(path, newline='') as file:
         reader = csv.DictReader(file)
         missing = [column for column in REQUIRED_COLUMNS if column not in (reader.fieldnames or [])]
         if missing:
             raise ValueError(f"{path}: missing column(s): {', '.join(missing)}")
 
-        passengers = []
+        requests = []
         for row_number, row in enumerate(reader, start=2):  # row 1 is the header
             if any(not row[column] for column in REQUIRED_COLUMNS):
                 raise ValueError(f"{path} row {row_number}: every column needs a value")
@@ -35,24 +31,8 @@ def read_requests(path: str) -> list[Passenger]:
                 time, source, destination = int(row['time']), int(row['source']), int(row['dest'])
             except ValueError:
                 raise ValueError(f"{path} row {row_number}: time, source and dest must be whole numbers")
-            passengers.append(Passenger(row['id'].strip(), time, source, destination))
-    return passengers
-
-
-def check_requests(passengers: list[Passenger], floors: int) -> None:
-    """Stop with a clear message if any request cannot be served in this building."""
-    seen_ids = set()
-    for passenger in passengers:
-        if passenger.id in seen_ids:
-            raise ValueError(f"passenger {passenger.id}: id is used more than once")
-        seen_ids.add(passenger.id)
-        if passenger.request_time < 0:
-            raise ValueError(f"passenger {passenger.id}: request time cannot be negative")
-        for floor in (passenger.source, passenger.destination):
-            if not 1 <= floor <= floors:
-                raise ValueError(f"passenger {passenger.id}: floor {floor} is outside floors 1 to {floors}")
-        if passenger.source == passenger.destination:
-            raise ValueError(f"passenger {passenger.id}: source and destination are the same floor")
+            requests.append((time, row['id'].strip(), source, destination))
+    return requests
 
 
 def write_positions(path: str, positions: list[list[int]]) -> None:
@@ -93,9 +73,6 @@ def main() -> None:
     parser.add_argument('--positions-out', default='positions.csv', help='position log file (default positions.csv)')
     args = parser.parse_args()
 
-    for name in ('floors', 'elevators', 'capacity'):
-        if getattr(args, name) < 1:
-            parser.error(f'--{name} must be at least 1')
     allowed_delay = DEFAULT_ALLOWED_DELAY
     if args.allowed_delay is not None:
         if args.service_order != 'forecast':
@@ -107,27 +84,15 @@ def main() -> None:
                 allowed_delay = int(args.allowed_delay)
             except ValueError:
                 parser.error('--allowed-delay must be a whole number or "none"')
-            if allowed_delay < 0:
-                parser.error('--allowed-delay cannot be negative')
 
     try:
-        passengers = read_requests(args.requests)
-        check_requests(passengers, args.floors)
+        requests = read_requests(args.requests)
+        positions, passengers = simulate(
+            requests, args.floors, args.elevators, args.capacity,
+            args.assignment, args.service_order, allowed_delay,
+        )
     except ValueError as error:
         parser.error(str(error))
-
-    elevators = [Elevator(id=i, capacity=args.capacity) for i in range(args.elevators)]
-    if args.service_order == 'forecast':
-        service_order = Forecast(allowed_delay=allowed_delay)
-    else:
-        service_order = SERVICE_ORDERS[args.service_order]()
-    if args.assignment == 'forecast':
-        # Forecast predicts with the same service order the cars follow.
-        assignment = ForecastAssignment(service_order)
-    else:
-        assignment = ASSIGNMENTS[args.assignment]()
-    simulation = Simulation(passengers, elevators, assignment, service_order)
-    positions = simulation.run()
 
     write_positions(args.positions_out, positions)
     print(f'Building: {args.floors} floors, {args.elevators} cars, capacity {args.capacity}, '
