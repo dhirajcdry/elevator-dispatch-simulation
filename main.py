@@ -1,6 +1,7 @@
 """Run one building: read requests, simulate, write the position log, print statistics.
 
 Example:
+    python3 main.py requests.csv                     (forecast for both decisions, allowed delay 80)
     python3 main.py requests.csv --elevators 2 --assignment nearest --service-order request
 """
 
@@ -103,8 +104,11 @@ def main() -> None:
     parser.add_argument('--floors', type=int, default=100, help='number of floors (default 100)')
     parser.add_argument('--elevators', type=int, default=4, help='number of cars (default 4)')
     parser.add_argument('--capacity', type=int, default=10, help='passengers per car (default 10)')
-    parser.add_argument('--assignment', choices=ASSIGNMENTS, default='round-robin')
-    parser.add_argument('--service-order', choices=SERVICE_ORDERS, default='request')
+    # Forecast for both decisions by default: the best results in the review runs.
+    parser.add_argument('--assignment', choices=ASSIGNMENTS, default='forecast',
+                        help='which car takes each new passenger (default forecast)')
+    parser.add_argument('--service-order', choices=SERVICE_ORDERS, default='forecast',
+                        help='which waiting passenger each car picks up next (default forecast)')
     parser.add_argument('--allowed-delay', default=None,
                         help='forecast only: how many ticks an earlier passenger may be pushed back; '
                              f'a whole number, or "none" for no limit (default {DEFAULT_ALLOWED_DELAY})')

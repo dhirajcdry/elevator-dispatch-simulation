@@ -16,8 +16,8 @@ def simulate(
     floors: int = 100,
     elevators: int = 4,
     capacity: int = 10,
-    assignment: str = 'round-robin',
-    service_order: str = 'request',
+    assignment: str = 'forecast',
+    service_order: str = 'forecast',
     allowed_delay: int | None = DEFAULT_ALLOWED_DELAY,
 ) -> tuple[list[list[int]], list[Passenger]]:
     """Run one building on a list of (time, id, source, dest) requests.
