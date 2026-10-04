@@ -56,11 +56,7 @@ def floors_until_pickup(car: Elevator, passenger: Passenger) -> int:
     # With riders aboard, the car must keep going their way: it never reverses with riders.
     # It can collect the passenger on the way only if they are ahead of the car
     # and want to travel in the same direction as the riders.
-    if car.direction == 'up':
-        passenger_is_ahead = passenger.source >= car.floor
-    else:
-        passenger_is_ahead = passenger.source <= car.floor
-
+    passenger_is_ahead = passenger.source == car.floor or car.is_ahead(passenger.source, car.direction)
     if passenger_is_ahead and passenger.direction == car.direction:
         return distance
 
@@ -68,8 +64,4 @@ def floors_until_pickup(car: Elevator, passenger: Passenger) -> int:
     # in its direction, then travels back to the passenger.
     # Example: car at 10 with riders going up to 20, passenger at 8:
     # 10 floors up to 20, then 12 floors back down to 8, so 22.
-    if car.direction == 'up':
-        last_drop_off = max(rider.destination for rider in car.riders)
-    else:
-        last_drop_off = min(rider.destination for rider in car.riders)
-    return abs(last_drop_off - car.floor) + abs(last_drop_off - passenger.source)
+    return abs(car.last_drop_off - car.floor) + abs(car.last_drop_off - passenger.source)

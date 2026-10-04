@@ -25,6 +25,25 @@ class Elevator:
             return None
         return 'up' if self.riders[0].destination > self.floor else 'down'
 
+    @property
+    def last_drop_off(self) -> int | None:
+        """The farthest rider destination in the car's direction: where its current trip ends.
+
+        None when the car is empty.
+        """
+        if not self.riders:
+            return None
+        destinations = [rider.destination for rider in self.riders]
+        if self.direction == 'up':
+            return max(destinations)
+        return min(destinations)
+
+    def is_ahead(self, floor: int, direction: str) -> bool:
+        """Going up: is the floor above the car? Going down: is it below the car?"""
+        if direction == 'up':
+            return floor > self.floor
+        return floor < self.floor
+
     def assign(self, passenger: Passenger) -> None:
         """Make this car responsible for the passenger. An assignment never changes."""
         if passenger.assigned_elevator is not None:

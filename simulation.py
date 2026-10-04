@@ -44,6 +44,7 @@ class Simulation:
                 passenger = upcoming.pop(0)
                 car = self.assignment.choose(self.elevators, passenger)
                 car.assign(passenger)
+                self.service_order.assigned(car, passenger, time)
 
             # 3. Board whoever the service order allows at each car's floor.
             for car in self.elevators:
@@ -54,9 +55,8 @@ class Simulation:
             positions.append([car.floor for car in self.elevators])
 
             # 5. Stop once every request has been made and every passenger delivered.
-            if not upcoming and all(
-                not car.riders and not car.waiting for car in self.elevators
-            ):
+            nobody_left = all(not car.riders and not car.waiting for car in self.elevators)
+            if not upcoming and nobody_left:
                 return positions
 
             # 6. Move each car one floor toward the target its service order chose.

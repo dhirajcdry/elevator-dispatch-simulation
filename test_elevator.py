@@ -99,5 +99,23 @@ class MoveTest(unittest.TestCase):
             car.move_toward(1)
 
 
+class TripTest(unittest.TestCase):
+    def test_last_drop_off_is_the_farthest_destination_in_the_cars_direction(self):
+        car = Elevator(id=0, capacity=10, floor=10)
+        self.assertIsNone(car.last_drop_off)  # empty
+        for name, destination in (('alice', 20), ('bob', 15)):
+            passenger = Passenger(name, request_time=0, source=10, destination=destination)
+            car.assign(passenger)
+            car.pick_up(passenger, time=0)
+        self.assertEqual(car.last_drop_off, 20)
+
+    def test_is_ahead_depends_on_direction_and_excludes_the_cars_floor(self):
+        car = Elevator(id=0, capacity=10, floor=10)
+        self.assertTrue(car.is_ahead(12, 'up'))
+        self.assertFalse(car.is_ahead(8, 'up'))
+        self.assertTrue(car.is_ahead(8, 'down'))
+        self.assertFalse(car.is_ahead(10, 'up'))
+
+
 if __name__ == '__main__':
     unittest.main()

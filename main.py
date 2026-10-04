@@ -11,11 +11,11 @@ import statistics
 from assignment import NearestCar, RoundRobin
 from elevator import Elevator
 from passenger import Passenger
-from service_order import DirectionBased, RequestOrder
+from service_order import DirectionBased, Forecast, RequestOrder
 from simulation import Simulation
 
 ASSIGNMENTS = {'round-robin': RoundRobin, 'nearest': NearestCar}
-SERVICE_ORDERS = {'request': RequestOrder, 'direction': DirectionBased}
+SERVICE_ORDERS = {'request': RequestOrder, 'direction': DirectionBased, 'forecast': Forecast}
 REQUIRED_COLUMNS = ['time', 'id', 'source', 'dest']
 
 
@@ -87,12 +87,19 @@ def main() -> None:
     parser.add_argument('--capacity', type=int, default=10, help='passengers per car (default 10)')
     parser.add_argument('--assignment', choices=ASSIGNMENTS, default='round-robin')
     parser.add_argument('--service-order', choices=SERVICE_ORDERS, default='request')
+    parser.add_argument('--allowed-delay', type=int, default=None,
+                        help='forecast only: how far an earlier passenger may be pushed back, in ticks (default no limit)')
     parser.add_argument('--positions-out', default='positions.csv', help='position log file (default positions.csv)')
     args = parser.parse_args()
 
     for name in ('floors', 'elevators', 'capacity'):
         if getattr(args, name) < 1:
             parser.error(f'--{name} must be at least 1')
+    if args.allowed_delay is not None:
+        if args.service_order != 'forecast':
+            parser.error('--allowed-delay only applies to --service-order forecast')
+        if args.allowed_delay < 0:
+            parser.error('--allowed-delay cannot be negative')
 
     try:
         passengers = read_requests(args.requests)
@@ -101,12 +108,21 @@ def main() -> None:
         parser.error(str(error))
 
     elevators = [Elevator(id=i, capacity=args.capacity) for i in range(args.elevators)]
-    simulation = Simulation(passengers, elevators, ASSIGNMENTS[args.assignment](), SERVICE_ORDERS[args.service_order]())
+    if args.service_order == 'forecast':
+        service_order = Forecast(allowed_delay=args.allowed_delay)
+    else:
+        service_order = SERVICE_ORDERS[args.service_order]()
+    simulation = Simulation(passengers, elevators, ASSIGNMENTS[args.assignment](), service_order)
     positions = simulation.run()
 
     write_positions(args.positions_out, positions)
     print(f'Building: {args.floors} floors, {args.elevators} cars, capacity {args.capacity}, '
           f'assignment {args.assignment}, service order {args.service_order}')
+    if args.service_order == 'forecast':
+        if args.allowed_delay is None:
+            print('Allowed delay: no limit')
+        else:
+            print(f'Allowed delay: {args.allowed_delay}')
     print_statistics(passengers, positions)
     print(f'Position log written to {args.positions_out}')
 
