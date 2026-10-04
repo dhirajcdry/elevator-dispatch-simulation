@@ -3,7 +3,7 @@ import unittest
 from assignment import RoundRobin
 from elevator import Elevator
 from passenger import Passenger
-from service_order import Forecast, predict_finish_times
+from service_order import Forecast, RequestOrder, predict_finish_times
 from simulation import Simulation
 
 
@@ -61,11 +61,12 @@ class ForecastTest(unittest.TestCase):
     def test_predict_finish_times_leaves_the_real_car_unchanged(self):
         car = Elevator(id=0, capacity=10)
         alice, bob = alice_and_bob()
-        car.assign(alice)
+        # Bob assigned first, so request order serves Bob, then Alice.
         car.assign(bob)
-        predicted_finish = predict_finish_times(car, [bob, alice], time=0)
+        car.assign(alice)
+        predicted_finish = predict_finish_times(car, RequestOrder(), time=0)
         self.assertEqual(predicted_finish, {'bob': 2, 'alice': 40})
-        self.assertEqual((car.floor, car.waiting, car.riders), (1, [alice, bob], []))
+        self.assertEqual((car.floor, car.waiting, car.riders), (1, [bob, alice], []))
         self.assertIsNone(alice.pickup_time)
 
 

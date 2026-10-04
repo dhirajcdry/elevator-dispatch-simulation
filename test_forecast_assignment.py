@@ -1,9 +1,9 @@
 import unittest
 
-from assignment import ForecastAssignment, predict_finish_times
+from assignment import ForecastAssignment
 from elevator import Elevator
 from passenger import Passenger
-from service_order import DirectionBased, Forecast, RequestOrder
+from service_order import DirectionBased, Forecast, RequestOrder, predict_finish_times
 
 
 def choose_for_bob(bob_destination, service_order):

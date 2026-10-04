@@ -158,7 +158,10 @@ class Forecast:
         # On a tie the later position is kept.
         for position in reversed(range(len(order) + 1)):
             new_order = order[:position] + [newcomer] + order[position:]
-            predicted_finish = predict_finish_times(car, new_order, now)
+            # A fresh forecast holding only this order: playing it forward follows new_order.
+            trial = Forecast()
+            trial.pickup_orders[car.id] = new_order
+            predicted_finish = predict_finish_times(car, trial, now)
             if not self.within_allowed_delay(predicted_finish):
                 continue
             # Request times are fixed, so the lowest sum of finish times is the lowest combined total time.
@@ -221,26 +224,29 @@ def next_target_in_order(car: Elevator, pickup_order: list[Passenger]) -> int | 
     return None
 
 
-def predict_finish_times(
-    car: Elevator, pickup_order: list[Passenger], time: int
-) -> dict[str, int]:
-    """Predict when the car's riders and everyone in `pickup_order` will reach their floors,
-    by playing the car forward from `time`, following `pickup_order`, with nobody else assigned.
+def predict_finish_times(car: Elevator, service_order, time: int, newcomer: Passenger | None = None) -> dict[str, int]:
+    """Predict when everyone assigned to this car will reach their floors,
+    by playing the car forward from `time` with the given service order.
 
-    Works on a copy, so the real car and passengers are unchanged.
+    With a newcomer, they are assigned to the car first. Works on copies,
+    so the real car, passengers and service order are unchanged.
     Follows the same tick order as the simulation, starting at the pick-up step.
     """
-    # Copied together, so the copied order holds the copied car's passengers.
-    car, pickup_order = copy.deepcopy((car, pickup_order))
+    # Copied together, so the copies still point at each other.
+    car, service_order, newcomer = copy.deepcopy((car, service_order, newcomer))
+    if newcomer is not None:
+        car.assign(newcomer)
+        service_order.plan_pickup(car, newcomer, time)
 
     predicted_finish = {}
     while True:
-        for passenger in who_boards_in_order(car, pickup_order):
+        for passenger in service_order.who_boards(car):
             car.pick_up(passenger, time)
-            pickup_order.remove(passenger)
-        if not car.riders and not pickup_order:
+        if not car.riders and not car.waiting:
             return predicted_finish
-        car.move_one_floor_toward(next_target_in_order(car, pickup_order))
+        target = service_order.next_target(car)
+        if target is not None:
+            car.move_one_floor_toward(target)
         time += 1
         for passenger in car.drop_off(time):
             predicted_finish[passenger.id] = time

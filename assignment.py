@@ -4,10 +4,9 @@ Each option has one method, choose(elevators, passenger, time), which returns th
 The simulation then calls car.assign(passenger); the choice never changes.
 """
 
-import copy
-
 from elevator import Elevator
 from passenger import Passenger
+from service_order import predict_finish_times
 
 
 class RoundRobin:
@@ -82,34 +81,6 @@ class ForecastAssignment:
                 best_added_time = added_time
                 best_passenger_count = car.passenger_count
         return best_car
-
-
-def predict_finish_times(car: Elevator, service_order, time: int, newcomer: Passenger | None = None) -> dict[str, int]:
-    """Predict when everyone assigned to this car will reach their floors,
-    by playing the car forward from `time` with the building's service order.
-
-    With a newcomer, they are assigned to the car first. Works on copies,
-    so the real car, passengers and service order are unchanged.
-    Follows the same tick order as the simulation, starting at the pick-up step.
-    """
-    # Copied together, so the copies still point at each other.
-    car, service_order, newcomer = copy.deepcopy((car, service_order, newcomer))
-    if newcomer is not None:
-        car.assign(newcomer)
-        service_order.plan_pickup(car, newcomer, time)
-
-    predicted_finish = {}
-    while True:
-        for passenger in service_order.who_boards(car):
-            car.pick_up(passenger, time)
-        if not car.riders and not car.waiting:
-            return predicted_finish
-        target = service_order.next_target(car)
-        if target is not None:
-            car.move_one_floor_toward(target)
-        time += 1
-        for passenger in car.drop_off(time):
-            predicted_finish[passenger.id] = time
 
 
 def floors_until_pickup(car: Elevator, passenger: Passenger) -> int:
