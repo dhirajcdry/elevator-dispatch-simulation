@@ -16,3 +16,6 @@
 # Python
 __pycache__/
 positions.csv
+
+# Presentation is kept out of the repository
+/presentation/
