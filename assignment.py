@@ -87,19 +87,29 @@ def floors_until_pickup(car: Elevator, passenger: Passenger) -> int:
     """How many floors the car must travel before it could pick this passenger up."""
     distance = abs(car.floor - passenger.source)
 
-    # An empty car can go straight to the passenger.
-    if car.direction is None:
+    # Where the car's current trip ends, and which way it is going there.
+    if car.riders:
+        # With riders aboard, the car must keep going their way: it never reverses with riders.
+        trip_end = car.last_drop_off
+        heading = car.direction
+    elif car.waiting:
+        # An empty car on its way to its first assigned pickup is heading there, not idle.
+        trip_end = car.waiting[0].source
+        if trip_end > car.floor:
+            heading = 'up'
+        else:
+            heading = 'down'
+    else:
+        # An idle car can go straight to the passenger.
         return distance
 
-    # With riders aboard, the car must keep going their way: it never reverses with riders.
-    # It can collect the passenger on the way only if they are ahead of the car
-    # and want to travel in the same direction as the riders.
-    passenger_is_ahead = passenger.source == car.floor or car.is_ahead(passenger.source, car.direction)
-    if passenger_is_ahead and passenger.direction == car.direction:
+    # The car can collect the passenger on the way only if they are ahead of it
+    # and want to travel the way it is heading.
+    passenger_is_ahead = passenger.source == car.floor or car.is_ahead(passenger.source, heading)
+    if passenger_is_ahead and passenger.direction == heading:
         return distance
 
-    # Otherwise the car first delivers its riders, finishing at the farthest destination
-    # in its direction, then travels back to the passenger.
+    # Otherwise the car first finishes its trip, then travels back to the passenger.
     # Example: car at 10 with riders going up to 20, passenger at 8:
     # 10 floors up to 20, then 12 floors back down to 8, so 22.
-    return abs(car.last_drop_off - car.floor) + abs(car.last_drop_off - passenger.source)
+    return abs(trip_end - car.floor) + abs(trip_end - passenger.source)

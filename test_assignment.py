@@ -68,6 +68,14 @@ class NearestCarTest(unittest.TestCase):
         # Plain distance would pick car 0 (2 floors); it must first go to 20, so 22.
         self.assertIs(NearestCar().choose(cars, alice, time=0), cars[1])  # 5 floors
 
+    def test_an_empty_car_heading_to_a_pickup_away_loses_to_a_farther_idle_car(self):
+        # Car 0 at 10 is empty but must first go up to Alice at 30; Bob at 9 is going down.
+        cars = [Elevator(id=0, capacity=10, floor=10), Elevator(id=1, capacity=10, floor=17)]
+        cars[0].assign(Passenger('alice', request_time=0, source=30, destination=31))
+        bob = Passenger('bob', request_time=0, source=9, destination=1)
+        self.assertEqual(floors_until_pickup(cars[0], bob), 20 + 21)  # up to 30, back down to 9
+        self.assertIs(NearestCar().choose(cars, bob, time=0), cars[1])  # 8 floors
+
 
 if __name__ == '__main__':
     unittest.main()
