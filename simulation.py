@@ -63,7 +63,7 @@ class Simulation:
             for car in self.elevators:
                 target = self.service_order.next_target(car)
                 if target is not None:
-                    car.move_toward(target)
+                    car.move_one_floor_toward(target)
 
             time += 1
             if time > self.max_ticks:

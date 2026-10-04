@@ -5,7 +5,7 @@ Each option is told when a passenger is assigned to a car:
 and every tick answers two questions about one car, in this order:
   who_boards(car)   - the waiting passengers who get on at this floor now
   next_target(car)  - the floor to head for, or None to stay put
-The simulation carries out the answers with car.pick_up and car.move_toward.
+The simulation carries out the answers with car.pick_up and car.move_one_floor_toward.
 Drop-offs are not a choice: riders get off when the car reaches their floor.
 """
 
@@ -240,7 +240,7 @@ def predict_finish_times(
             pickup_order.remove(passenger)
         if not car.riders and not pickup_order:
             return predicted_finish
-        car.move_toward(next_target_in_order(car, pickup_order))
+        car.move_one_floor_toward(next_target_in_order(car, pickup_order))
         time += 1
         for passenger in car.drop_off(time):
             predicted_finish[passenger.id] = time

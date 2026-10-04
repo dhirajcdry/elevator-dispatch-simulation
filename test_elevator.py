@@ -82,11 +82,11 @@ class DropOffTest(unittest.TestCase):
 class MoveTest(unittest.TestCase):
     def test_moves_one_floor_toward_target_or_stays(self):
         car = Elevator(id=0, capacity=10, floor=5)
-        car.move_toward(9)
+        car.move_one_floor_toward(9)
         self.assertEqual(car.floor, 6)
-        car.move_toward(2)
+        car.move_one_floor_toward(2)
         self.assertEqual(car.floor, 5)
-        car.move_toward(5)
+        car.move_one_floor_toward(5)
         self.assertEqual(car.floor, 5)
 
     def test_cannot_reverse_with_riders_aboard(self):
@@ -96,7 +96,7 @@ class MoveTest(unittest.TestCase):
         car.pick_up(alice, time=0)
         self.assertEqual(car.direction, 'up')
         with self.assertRaises(ValueError):
-            car.move_toward(1)
+            car.move_one_floor_toward(1)
 
 
 class TripTest(unittest.TestCase):

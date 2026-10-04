@@ -77,14 +77,14 @@ class Elevator:
         self.riders.append(passenger)
         passenger.pickup_time = time
 
-    def move_toward(self, target_floor: int) -> None:
+    def move_one_floor_toward(self, target_floor: int) -> None:
         """Move one floor toward the target, or stay if already there."""
-        if target_floor > self.floor:
-            step = 1
-        elif target_floor < self.floor:
-            step = -1
-        else:
+        if target_floor == self.floor:
             return
-        if self.direction == 'up' and step == -1 or self.direction == 'down' and step == 1:
+        # With riders aboard, the target must be ahead: the car never reverses.
+        if self.riders and not self.is_ahead(target_floor, self.direction):
             raise ValueError(f"elevator {self.id} cannot reverse with riders aboard")
-        self.floor += step
+        if target_floor > self.floor:
+            self.floor += 1
+        else:
+            self.floor -= 1
