@@ -112,6 +112,11 @@ class DirectionBased:
         return False
 
 
+# Chosen from the allowed-delay sweep on the default building (100 floors, 4 cars, capacity 10):
+# the average stops improving at about 80 ticks, and the longest wait is lowest there.
+DEFAULT_ALLOWED_DELAY = 80
+
+
 class Forecast:
     """Keep a pickup order for each car and follow it the same way request order does.
 
@@ -121,7 +126,7 @@ class Forecast:
     after their first prediction. Passengers already in the order keep their order among themselves.
     """
 
-    def __init__(self, allowed_delay: int | None = None):
+    def __init__(self, allowed_delay: int | None = DEFAULT_ALLOWED_DELAY):
         self.allowed_delay = allowed_delay  # None: no limit
         # Each car's pickup order, by car id.
         self.pickup_orders: dict[int, list[Passenger]] = {}

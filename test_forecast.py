@@ -22,8 +22,11 @@ def alice_and_bob():
 class ForecastTest(unittest.TestCase):
     def test_no_limit_serves_the_short_trip_first(self):
         alice, bob = alice_and_bob()
-        run([alice, bob], Forecast())
+        run([alice, bob], Forecast(allowed_delay=None))
         self.assertEqual((alice.total_time, bob.total_time), (40, 2))  # combined 42
+
+    def test_default_allowed_delay_is_80(self):
+        self.assertEqual(Forecast().allowed_delay, 80)
 
     def test_allowed_delay_zero_keeps_alice_on_time(self):
         alice, bob = alice_and_bob()
@@ -53,7 +56,7 @@ class ForecastTest(unittest.TestCase):
 
     def test_first_prediction_is_kept_when_a_newcomer_pushes_back(self):
         alice, bob = alice_and_bob()
-        forecast = Forecast()
+        forecast = Forecast(allowed_delay=None)
         run([alice, bob], forecast)
         self.assertEqual(forecast.first_predicted_finish['alice'], 38)
         self.assertEqual(alice.drop_off_time, 40)
