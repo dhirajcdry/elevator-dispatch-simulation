@@ -1,7 +1,7 @@
 """Service order: which waiting passenger a car picks up next.
 
-Each option is told when a passenger is assigned to a car:
-  assigned(car, passenger, time)
+Each option plans a passenger's pickup right after they are assigned to a car:
+  plan_pickup(car, passenger, time)
 and every tick answers two questions about one car, in this order:
   who_boards(car)   - the waiting passengers who get on at this floor now
   next_target(car)  - the floor to head for, or None to stay put
@@ -22,8 +22,8 @@ class RequestOrder:
     Several riders can be aboard at once.
     """
 
-    def assigned(self, car: Elevator, passenger: Passenger, time: int) -> None:
-        pass  # car.waiting is already in request order
+    def plan_pickup(self, car: Elevator, passenger: Passenger, time: int) -> None:
+        pass  # nothing to plan: pickups follow car.waiting, which is in request order
 
     def who_boards(self, car: Elevator) -> list[Passenger]:
         # car.waiting is in request order.
@@ -45,8 +45,8 @@ class DirectionBased:
         # Each car's current sweep, by car id: 'up', 'down', or None when it has nothing to do.
         self.sweep: dict[int, str | None] = {}
 
-    def assigned(self, car: Elevator, passenger: Passenger, time: int) -> None:
-        pass  # the sweep is decided each tick in who_boards
+    def plan_pickup(self, car: Elevator, passenger: Passenger, time: int) -> None:
+        pass  # nothing to plan: the sweep decides each tick in who_boards
 
     def who_boards(self, car: Elevator) -> list[Passenger]:
         sweep = self.current_sweep(car)
@@ -129,7 +129,7 @@ class Forecast:
         # the time they were first told. K is measured from this. By passenger id.
         self.first_predicted_finish: dict[str, int] = {}
 
-    def assigned(self, car: Elevator, passenger: Passenger, time: int) -> None:
+    def plan_pickup(self, car: Elevator, passenger: Passenger, time: int) -> None:
         # The only time a pickup order changes, apart from passengers leaving it as they board.
         order = self.pickup_orders.get(car.id, [])
         self.pickup_orders[car.id] = self.place_newcomer(car, order, passenger, time)

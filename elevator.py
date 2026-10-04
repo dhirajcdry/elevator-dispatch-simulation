@@ -26,6 +26,11 @@ class Elevator:
         return 'up' if self.riders[0].destination > self.floor else 'down'
 
     @property
+    def passenger_count(self) -> int:
+        """Everyone this car is responsible for: aboard plus waiting."""
+        return len(self.riders) + len(self.waiting)
+
+    @property
     def last_drop_off(self) -> int | None:
         """The farthest rider destination in the car's direction: where its current trip ends.
 

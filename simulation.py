@@ -42,9 +42,9 @@ class Simulation:
             # 2. Release requests made at this tick and assign each one immediately.
             while upcoming and upcoming[0].request_time <= time:
                 passenger = upcoming.pop(0)
-                car = self.assignment.choose(self.elevators, passenger)
+                car = self.assignment.choose(self.elevators, passenger, time)
                 car.assign(passenger)
-                self.service_order.assigned(car, passenger, time)
+                self.service_order.plan_pickup(car, passenger, time)
 
             # 3. Board whoever the service order allows at each car's floor.
             for car in self.elevators:

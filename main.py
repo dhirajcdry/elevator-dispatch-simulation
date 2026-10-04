@@ -8,13 +8,13 @@ import argparse
 import csv
 import statistics
 
-from assignment import NearestCar, RoundRobin
+from assignment import ForecastAssignment, NearestCar, RoundRobin
 from elevator import Elevator
 from passenger import Passenger
 from service_order import DirectionBased, Forecast, RequestOrder
 from simulation import Simulation
 
-ASSIGNMENTS = {'round-robin': RoundRobin, 'nearest': NearestCar}
+ASSIGNMENTS = {'round-robin': RoundRobin, 'nearest': NearestCar, 'forecast': ForecastAssignment}
 SERVICE_ORDERS = {'request': RequestOrder, 'direction': DirectionBased, 'forecast': Forecast}
 REQUIRED_COLUMNS = ['time', 'id', 'source', 'dest']
 
@@ -112,7 +112,12 @@ def main() -> None:
         service_order = Forecast(allowed_delay=args.allowed_delay)
     else:
         service_order = SERVICE_ORDERS[args.service_order]()
-    simulation = Simulation(passengers, elevators, ASSIGNMENTS[args.assignment](), service_order)
+    if args.assignment == 'forecast':
+        # Forecast predicts with the same service order the cars follow.
+        assignment = ForecastAssignment(service_order)
+    else:
+        assignment = ASSIGNMENTS[args.assignment]()
+    simulation = Simulation(passengers, elevators, assignment, service_order)
     positions = simulation.run()
 
     write_positions(args.positions_out, positions)

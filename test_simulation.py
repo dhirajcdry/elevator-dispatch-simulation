@@ -81,7 +81,7 @@ class ClockTest(unittest.TestCase):
 
     def test_a_service_order_that_never_finishes_hits_the_safety_limit(self):
         class NeverBoards:
-            def assigned(self, car, passenger, time):
+            def plan_pickup(self, car, passenger, time):
                 pass
 
             def who_boards(self, car):

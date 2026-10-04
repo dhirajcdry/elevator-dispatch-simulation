@@ -100,6 +100,15 @@ class MoveTest(unittest.TestCase):
 
 
 class TripTest(unittest.TestCase):
+    def test_passenger_count_is_riders_plus_waiting(self):
+        car = Elevator(id=0, capacity=10)
+        alice = Passenger('alice', request_time=0, source=1, destination=5)
+        bob = Passenger('bob', request_time=0, source=3, destination=8)
+        car.assign(alice)
+        car.assign(bob)
+        car.pick_up(alice, time=0)
+        self.assertEqual(car.passenger_count, 2)
+
     def test_last_drop_off_is_the_farthest_destination_in_the_cars_direction(self):
         car = Elevator(id=0, capacity=10, floor=10)
         self.assertIsNone(car.last_drop_off)  # empty
