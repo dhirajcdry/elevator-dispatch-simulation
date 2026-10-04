@@ -6,6 +6,8 @@ Example:
 
 import argparse
 import csv
+import os
+import re
 import statistics
 
 from passenger import Passenger
@@ -13,26 +15,62 @@ from service_order import DEFAULT_ALLOWED_DELAY
 from simulation import ASSIGNMENTS, SERVICE_ORDERS, simulate
 
 REQUIRED_COLUMNS = ['time', 'id', 'source', 'dest']
+# Digits 0-9 only, with an optional sign. Python's int() also accepts '1_0' and non-English digits.
+WHOLE_NUMBER = re.compile(r'[+-]?[0-9]+')
 
 
 def read_requests(path: str) -> list[tuple[int, str, int, int]]:
-    """Read the request CSV into (time, id, source, dest) rows, in file order."""
-    with open(path, newline='') as file:
-        reader = csv.DictReader(file)
-        missing = [column for column in REQUIRED_COLUMNS if column not in (reader.fieldnames or [])]
-        if missing:
-            raise ValueError(f"{path}: missing column(s): {', '.join(missing)}")
+    """Read the request CSV into (time, id, source, dest) rows, in file order.
 
-        requests = []
-        for row_number, row in enumerate(reader, start=2):  # row 1 is the header
-            if any(not row[column] for column in REQUIRED_COLUMNS):
-                raise ValueError(f"{path} row {row_number}: every column needs a value")
-            try:
-                time, source, destination = int(row['time']), int(row['source']), int(row['dest'])
-            except ValueError:
-                raise ValueError(f"{path} row {row_number}: time, source and dest must be whole numbers")
-            requests.append((time, row['id'].strip(), source, destination))
+    Column names may have spaces around them and any case; other columns are ignored.
+    Blank lines are skipped. Errors name the file and the line.
+    """
+    try:
+        # utf-8-sig also accepts the invisible marker Excel puts at the start of "CSV UTF-8" files.
+        with open(path, newline='', encoding='utf-8-sig') as file:
+            reader = csv.reader(file)
+            header = next(reader, None)
+            if header is None:
+                raise ValueError(f"{path}: the file is empty")
+            names = [name.strip().lower() for name in header]
+            missing = [column for column in REQUIRED_COLUMNS if column not in names]
+            if missing:
+                raise ValueError(f"{path}: missing column(s): {', '.join(missing)}")
+            if len(set(names)) != len(names):
+                raise ValueError(f"{path}: a column name appears more than once")
+
+            requests = []
+            for row in reader:
+                line = reader.line_num
+                if not any(cell.strip() for cell in row):
+                    continue  # blank line
+                if len(row) != len(header):
+                    raise ValueError(f"{path} line {line}: expected {len(header)} values, found {len(row)}")
+                value = {name: row[names.index(name)].strip() for name in REQUIRED_COLUMNS}
+                if not all(value.values()):
+                    raise ValueError(f"{path} line {line}: every column needs a value")
+                for name in ('time', 'source', 'dest'):
+                    if not WHOLE_NUMBER.fullmatch(value[name]):
+                        raise ValueError(f"{path} line {line}: {name} must be a whole number, got {value[name]!r}")
+                requests.append((int(value['time']), value['id'], int(value['source']), int(value['dest'])))
+    except UnicodeDecodeError:
+        raise ValueError(f"{path}: not a UTF-8 text file")
+    except OSError as error:
+        raise ValueError(f"{path}: {error.strerror}")
     return requests
+
+
+def check_output_path(path: str, input_path: str) -> None:
+    """Stop before the run if the position log could not be written."""
+    folder = os.path.dirname(os.path.abspath(path))
+    if os.path.isdir(path):
+        raise ValueError(f"{path}: is a folder, not a file")
+    if not os.path.isdir(folder):
+        raise ValueError(f"{path}: folder {folder} does not exist")
+    if not os.access(folder, os.W_OK):
+        raise ValueError(f"{path}: folder {folder} is not writable")
+    if os.path.abspath(path) == os.path.abspath(input_path):
+        raise ValueError(f"{path}: the position log would overwrite the input file")
 
 
 def write_positions(path: str, positions: list[list[int]]) -> None:
@@ -86,6 +124,7 @@ def main() -> None:
                 parser.error('--allowed-delay must be a whole number or "none"')
 
     try:
+        check_output_path(args.positions_out, args.requests)
         requests = read_requests(args.requests)
         positions, passengers = simulate(
             requests, args.floors, args.elevators, args.capacity,
@@ -95,7 +134,8 @@ def main() -> None:
         parser.error(str(error))
 
     write_positions(args.positions_out, positions)
-    print(f'Building: {args.floors} floors, {args.elevators} cars, capacity {args.capacity}, '
+    cars = 'car' if args.elevators == 1 else 'cars'
+    print(f'Building: {args.floors} floors, {args.elevators} {cars}, capacity {args.capacity}, '
           f'assignment {args.assignment}, service order {args.service_order}')
     if args.service_order == 'forecast':
         if allowed_delay is None:
