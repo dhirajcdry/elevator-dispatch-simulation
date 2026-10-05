@@ -75,11 +75,11 @@ def check_output_path(path: str, input_path: str) -> None:
 
 
 def write_positions(path: str, positions: list[list[int]]) -> None:
-    """One row per tick: the time, then every car's floor."""
-    car_count = len(positions[0])
+    """One row per tick: the time, then every elevator's floor."""
+    elevator_count = len(positions[0])
     with open(path, 'w', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow(['time'] + [f'elevator_{i}' for i in range(car_count)])
+        writer.writerow(['time'] + [f'elevator_{i}' for i in range(elevator_count)])
         for time, floors in enumerate(positions):
             writer.writerow([time] + floors)
 
@@ -102,13 +102,13 @@ def main() -> None:
     parser = argparse.ArgumentParser(description='Simulate one building of elevators.')
     parser.add_argument('requests', help='CSV file with columns time,id,source,dest')
     parser.add_argument('--floors', type=int, default=100, help='number of floors (default 100)')
-    parser.add_argument('--elevators', type=int, default=4, help='number of cars (default 4)')
-    parser.add_argument('--capacity', type=int, default=10, help='passengers per car (default 10)')
+    parser.add_argument('--elevators', type=int, default=4, help='number of elevators (default 4)')
+    parser.add_argument('--capacity', type=int, default=10, help='passengers per elevator (default 10)')
     # Forecast for both decisions by default: the best results in the review runs.
     parser.add_argument('--assignment', choices=ASSIGNMENTS, default='forecast',
-                        help='which car takes each new passenger (default forecast)')
+                        help='which elevator takes each new passenger (default forecast)')
     parser.add_argument('--service-order', choices=SERVICE_ORDERS, default='forecast',
-                        help='which waiting passenger each car picks up next (default forecast)')
+                        help='which waiting passenger each elevator picks up next (default forecast)')
     parser.add_argument('--allowed-delay', default=None,
                         help='forecast only: how many ticks an earlier passenger may be pushed back; '
                              f'a whole number, or "none" for no limit (default {DEFAULT_ALLOWED_DELAY})')
@@ -138,8 +138,8 @@ def main() -> None:
         parser.error(str(error))
 
     write_positions(args.positions_out, positions)
-    cars = 'car' if args.elevators == 1 else 'cars'
-    print(f'Building: {args.floors} floors, {args.elevators} {cars}, capacity {args.capacity}, '
+    noun = 'elevator' if args.elevators == 1 else 'elevators'
+    print(f'Building: {args.floors} floors, {args.elevators} {noun}, capacity {args.capacity}, '
           f'assignment {args.assignment}, service order {args.service_order}')
     if args.service_order == 'forecast':
         if allowed_delay is None:

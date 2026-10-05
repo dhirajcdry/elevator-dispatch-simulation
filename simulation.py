@@ -1,15 +1,15 @@
-"""Run one building: simulate() checks the requests and settings, builds the cars and
+"""Run one building: simulate() checks the requests and settings, builds the elevators and
 the chosen methods, and runs the clock (Simulation), which releases requests, asks the
-methods for decisions, and logs car floors."""
+methods for decisions, and logs elevator floors."""
 
 from collections import deque
 
-from assignment import ForecastAssignment, NearestCar, RoundRobin
+from assignment import ForecastAssignment, NearestElevator, RoundRobin
 from elevator import Elevator
 from passenger import Passenger
 from service_order import DEFAULT_ALLOWED_DELAY, DirectionBased, Forecast, RequestOrder
 
-ASSIGNMENTS = {'round-robin': RoundRobin, 'nearest': NearestCar, 'forecast': ForecastAssignment}
+ASSIGNMENTS = {'round-robin': RoundRobin, 'nearest': NearestElevator, 'forecast': ForecastAssignment}
 SERVICE_ORDERS = {'request': RequestOrder, 'direction': DirectionBased, 'forecast': Forecast}
 
 
@@ -24,8 +24,8 @@ def simulate(
 ) -> tuple[list[list[int]], list[Passenger]]:
     """Run one building on a list of (time, id, source, dest) requests.
 
-    Returns every car's floor at each tick from 0, and the passengers with their times.
-    Fresh passengers and cars are built on every call, so the same list can be run
+    Returns every elevator's floor at each tick from 0, and the passengers with their times.
+    Fresh passengers and elevators are built on every call, so the same list can be run
     again with other methods. allowed_delay applies to the forecast service order only
     (None: no limit). Raises ValueError with a clear message if anything is invalid.
     """
@@ -39,18 +39,18 @@ def simulate(
         passengers.append(Passenger(str(id), time, source, destination))
     check_requests(passengers, floors)
 
-    cars = [Elevator(id=i, capacity=capacity) for i in range(elevators)]
+    elevator_list = [Elevator(id=i, capacity=capacity) for i in range(elevators)]
     if service_order == 'forecast':
         chosen_order = Forecast(allowed_delay=allowed_delay)
     else:
         chosen_order = SERVICE_ORDERS[service_order]()
     if assignment == 'forecast':
-        # Forecast predicts with the same service order the cars follow.
+        # Forecast predicts with the same service order the elevators follow.
         chosen_assignment = ForecastAssignment(chosen_order)
     else:
         chosen_assignment = ASSIGNMENTS[assignment]()
 
-    positions = Simulation(passengers, cars, chosen_assignment, chosen_order).run()
+    positions = Simulation(passengers, elevator_list, chosen_assignment, chosen_order).run()
     return positions, passengers
 
 
@@ -94,7 +94,7 @@ def is_whole_number(value) -> bool:
 
 
 class Simulation:
-    """One building: its cars, its passengers, and its two chosen methods."""
+    """One building: its elevators, its passengers, and its two chosen methods."""
 
     def __init__(
         self,
@@ -114,8 +114,8 @@ class Simulation:
     def run(self) -> list[list[int]]:
         """Run until every passenger is delivered.
 
-        Returns every car's floor at each tick, starting at tick 0.
-        Always ends for checked input: the requests are finite, every car has room,
+        Returns every elevator's floor at each tick, starting at tick 0.
+        Always ends for checked input: the requests are finite, every elevator has room,
         and every service order keeps heading for the work it has left.
         """
         positions = []
@@ -124,33 +124,33 @@ class Simulation:
 
         while True:
             # 1. Drop off riders whose destination is this floor.
-            for car in self.elevators:
-                car.drop_off(time)
+            for elevator in self.elevators:
+                elevator.drop_off(time)
 
             # 2. Release requests made at this tick and assign each one immediately.
             while upcoming and upcoming[0].request_time <= time:
                 passenger = upcoming.popleft()
-                car = self.assignment.choose(self.elevators, passenger, time)
-                car.assign(passenger)
-                self.service_order.plan_pickup(car, passenger, time)
+                elevator = self.assignment.choose(self.elevators, passenger, time)
+                elevator.assign(passenger)
+                self.service_order.plan_pickup(elevator, passenger, time)
 
-            # 3. Board whoever the service order allows at each car's floor.
-            for car in self.elevators:
-                for passenger in self.service_order.who_boards(car):
-                    car.pick_up(passenger, time)
+            # 3. Board whoever the service order allows at each elevator's floor.
+            for elevator in self.elevators:
+                for passenger in self.service_order.who_boards(elevator):
+                    elevator.pick_up(passenger, time)
 
-            # 4. Log where every car is at this tick.
-            positions.append([car.floor for car in self.elevators])
+            # 4. Log where every elevator is at this tick.
+            positions.append([elevator.floor for elevator in self.elevators])
 
             # 5. Stop once every request has been made and every passenger delivered.
-            nobody_left = all(not car.riders and not car.waiting for car in self.elevators)
+            nobody_left = all(not elevator.riders and not elevator.waiting for elevator in self.elevators)
             if not upcoming and nobody_left:
                 return positions
 
-            # 6. Move each car one floor toward the target its service order chose.
-            for car in self.elevators:
-                target = self.service_order.next_target(car)
+            # 6. Move each elevator one floor toward the target its service order chose.
+            for elevator in self.elevators:
+                target = self.service_order.next_target(elevator)
                 if target is not None:
-                    car.move_one_floor_toward(target)
+                    elevator.move_one_floor_toward(target)
 
             time += 1

@@ -8,7 +8,7 @@ from simulation import Simulation
 
 
 def run(passengers, service_order, capacity=10):
-    """One car at floor 1. Returns its floor at every tick."""
+    """One elevator at floor 1. Returns its floor at every tick."""
     positions = Simulation(passengers, [Elevator(id=0, capacity=capacity)], RoundRobin(), service_order).run()
     return [row[0] for row in positions]
 
@@ -45,7 +45,7 @@ class DirectionBasedTest(unittest.TestCase):
         self.assertEqual((alice.pickup_time, alice.drop_off_time), (69, 70))
 
     def test_does_not_pick_up_someone_going_the_other_way(self):
-        # Deck direction slide: Bob 5 -> 2 is near but going down; the car is sweeping up for Alice.
+        # Deck direction slide: Bob 5 -> 2 is near but going down; the elevator is sweeping up for Alice.
         alice = Passenger('alice', request_time=0, source=30, destination=31)
         bob = Passenger('bob', request_time=0, source=5, destination=2)
         run([alice, bob], DirectionBased(), capacity=1)
@@ -53,7 +53,7 @@ class DirectionBasedTest(unittest.TestCase):
         self.assertEqual(bob.total_time, 59)
 
     def test_an_early_request_can_be_passed_again_and_again(self):
-        # Finding 3: capacity 1, Alice asks first (10 -> 12); a stream of 2 -> 20 trips keeps filling the car.
+        # Finding 3: capacity 1, Alice asks first (10 -> 12); a stream of 2 -> 20 trips keeps filling the elevator.
         alice = Passenger('alice', request_time=0, source=10, destination=12)
         stream = [Passenger('p1', 0, 2, 20)] + [Passenger(f'p{k}', 20 + 36 * (k - 2), 2, 20) for k in range(2, 7)]
         run([alice] + stream, DirectionBased(), capacity=1)
@@ -64,7 +64,7 @@ class DirectionBasedTest(unittest.TestCase):
         run([alice] + stream, RequestOrder(), capacity=1)
         self.assertEqual(alice.total_time, 11)
 
-    def test_idle_car_stays_put(self):
+    def test_idle_elevator_stays_put(self):
         alice = Passenger('alice', request_time=0, source=1, destination=3)
         later = Passenger('later', request_time=6, source=3, destination=1)
         floors = run([alice, later], DirectionBased())

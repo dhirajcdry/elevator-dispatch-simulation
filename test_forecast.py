@@ -8,12 +8,12 @@ from simulation import Simulation
 
 
 def run(passengers, service_order, capacity=10):
-    """One car at floor 1."""
+    """One elevator at floor 1."""
     Simulation(passengers, [Elevator(id=0, capacity=capacity)], RoundRobin(), service_order).run()
 
 
 def alice_and_bob():
-    # Scenario 13: Alice asks first for a long trip down; Bob's 1-floor trip is near the car.
+    # Scenario 13: Alice asks first for a long trip down; Bob's 1-floor trip is near the elevator.
     alice = Passenger('alice', request_time=0, source=20, destination=1)
     bob = Passenger('bob', request_time=0, source=2, destination=1)
     return alice, bob
@@ -61,15 +61,15 @@ class ForecastTest(unittest.TestCase):
         self.assertEqual(forecast.first_predicted_finish['alice'], 38)
         self.assertEqual(alice.drop_off_time, 40)
 
-    def test_predict_finish_times_leaves_the_real_car_unchanged(self):
-        car = Elevator(id=0, capacity=10)
+    def test_predict_finish_times_leaves_the_real_elevator_unchanged(self):
+        elevator = Elevator(id=0, capacity=10)
         alice, bob = alice_and_bob()
         # Bob assigned first, so request order serves Bob, then Alice.
-        car.assign(bob)
-        car.assign(alice)
-        predicted_finish = predict_finish_times(car, RequestOrder(), time=0)
+        elevator.assign(bob)
+        elevator.assign(alice)
+        predicted_finish = predict_finish_times(elevator, RequestOrder(), time=0)
         self.assertEqual(predicted_finish, {'bob': 2, 'alice': 40})
-        self.assertEqual((car.floor, car.waiting, car.riders), (1, [bob, alice], []))
+        self.assertEqual((elevator.floor, elevator.waiting, elevator.riders), (1, [bob, alice], []))
         self.assertIsNone(alice.pickup_time)
 
 

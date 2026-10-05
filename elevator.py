@@ -2,24 +2,24 @@ from passenger import Passenger
 
 
 class Elevator:
-    """One car: where it is, who is aboard, and who is waiting for it."""
+    """One elevator: where it is, who is aboard, and who is waiting for it."""
 
     def __init__(self, id: int, capacity: int, floor: int = 1):
         self.id = id
         self.capacity = capacity
         self.floor = floor
 
-        # Both lists keep passengers in the order they were assigned to this car.
+        # Both lists keep passengers in the order they were assigned to this elevator.
         self.riders: list[Passenger] = []   # aboard now
         self.waiting: list[Passenger] = []  # assigned here, not yet picked up
 
     @property
     def direction(self) -> str | None:
-        """'up' or 'down' while riders are aboard: the car must keep going this way.
+        """'up' or 'down' while riders are aboard: the elevator must keep going this way.
 
-        None when the car is empty: it is free to go either way, and the
+        None when the elevator is empty: it is free to go either way, and the
         service order's next target decides where it moves.
-        A car never reverses with riders aboard, so every rider is heading the same way.
+        An elevator never reverses with riders aboard, so every rider is heading the same way.
         """
         if not self.riders:
             return None
@@ -27,7 +27,7 @@ class Elevator:
 
     @property
     def passenger_count(self) -> int:
-        """Everyone this car is responsible for: aboard plus waiting."""
+        """Everyone this elevator is responsible for: aboard plus waiting."""
         return len(self.riders) + len(self.waiting)
 
     @property
@@ -37,19 +37,19 @@ class Elevator:
 
     @property
     def last_drop_off(self) -> int:
-        """The farthest rider destination in the car's direction: where its current trip ends."""
+        """The farthest rider destination in the elevator's direction: where its current trip ends."""
         if self.direction == 'up':
             return max(self.rider_destinations)
         return min(self.rider_destinations)
 
     def is_ahead(self, floor: int, direction: str) -> bool:
-        """Going up: is the floor above the car? Going down: is it below the car?"""
+        """Going up: is the floor above the elevator? Going down: is it below the elevator?"""
         if direction == 'up':
             return floor > self.floor
         return floor < self.floor
 
     def assign(self, passenger: Passenger) -> None:
-        """Make this car responsible for the passenger. An assignment never changes."""
+        """Make this elevator responsible for the passenger. An assignment never changes."""
         if passenger.assigned_elevator is not None:
             raise ValueError(f"{passenger.id} is already assigned to elevator {passenger.assigned_elevator}")
         passenger.assigned_elevator = self.id
@@ -81,19 +81,14 @@ class Elevator:
 
     def move_one_floor_toward(self, target_floor: int) -> None:
         """Move one floor toward the target, or stay if already there."""
-        if target_floor == self.floor:
-            return
-        # With riders aboard, the target must be ahead: the car never reverses.
-        if self.riders and not self.is_ahead(target_floor, self.direction):
-            raise ValueError(f"elevator {self.id} cannot reverse with riders aboard")
         if target_floor > self.floor:
-            self.floor += 1
-        else:
-            self.floor -= 1
+            self.move_to(self.floor + 1)
+        elif target_floor < self.floor:
+            self.move_to(self.floor - 1)
 
     def move_to(self, floor: int) -> None:
-        """Go straight to a floor. Used by predictions, which count the ticks themselves."""
-        # With riders aboard, the floor must be ahead: the car never reverses.
+        """Go straight to a floor. Predictions jump this way and count the ticks themselves."""
+        # With riders aboard, the floor must be ahead: the elevator never reverses.
         if self.riders and not self.is_ahead(floor, self.direction):
             raise ValueError(f"elevator {self.id} cannot reverse with riders aboard")
         self.floor = floor

@@ -7,15 +7,15 @@ from service_order import RequestOrder
 from simulation import Simulation
 
 
-def run(passengers, cars=1, capacity=10):
+def run(passengers, elevator_count=1, capacity=10):
     """Run a building with round robin and request order. Returns the position log."""
-    elevators = [Elevator(id=i, capacity=capacity) for i in range(cars)]
+    elevators = [Elevator(id=i, capacity=capacity) for i in range(elevator_count)]
     return Simulation(passengers, elevators, RoundRobin(), RequestOrder()).run()
 
 
-def floors(positions, car=0):
-    """One car's floor at every tick."""
-    return [row[car] for row in positions]
+def floors(positions, elevator=0):
+    """One elevator's floor at every tick."""
+    return [row[elevator] for row in positions]
 
 
 class RequestOrderTest(unittest.TestCase):
@@ -47,12 +47,12 @@ class RequestOrderTest(unittest.TestCase):
         self.assertEqual(floors(positions), [1, 2, 3, 4, 5, 4, 3, 2, 1])
         self.assertEqual((bob.pickup_time, bob.wait_time, bob.total_time), (7, 6, 7))
 
-    def test_full_car_delivers_its_riders_before_coming_back(self):
+    def test_full_elevator_delivers_its_riders_before_coming_back(self):
         alice = Passenger('alice', request_time=0, source=3, destination=20)
         bob = Passenger('bob', request_time=0, source=5, destination=10)
         run([alice, bob], capacity=1)
 
-        # The car passes Bob at 5 while full, delivers Alice at 20, then returns.
+        # The elevator passes Bob at 5 while full, delivers Alice at 20, then returns.
         self.assertEqual((bob.pickup_time, bob.drop_off_time), (34, 39))
 
     def test_passengers_at_the_same_floor_board_together(self):
@@ -71,18 +71,18 @@ class ClockTest(unittest.TestCase):
         self.assertEqual((alice.wait_time, alice.total_time), (0, 1))
 
     def test_no_passengers_logs_only_tick_zero(self):
-        self.assertEqual(run([], cars=2), [[1, 1]])
+        self.assertEqual(run([], elevator_count=2), [[1, 1]])
 
-    def test_every_car_is_logged_every_tick(self):
+    def test_every_elevator_is_logged_every_tick(self):
         alice = Passenger('alice', request_time=0, source=3, destination=4)
         bob = Passenger('bob', request_time=0, source=2, destination=3)
-        positions = run([alice, bob], cars=2)  # round robin: Alice to car 0, Bob to car 1
+        positions = run([alice, bob], elevator_count=2)  # round robin: Alice to elevator 0, Bob to elevator 1
         self.assertEqual(positions, [[1, 1], [2, 2], [3, 3], [4, 3]])
 
     def test_unsorted_input_is_released_by_request_time(self):
         later = Passenger('later', request_time=2, source=1, destination=2)
         first = Passenger('first', request_time=0, source=1, destination=2)
-        run([later, first], cars=2)  # round robin: first request goes to car 0
+        run([later, first], elevator_count=2)  # round robin: first request goes to elevator 0
         self.assertEqual((first.assigned_elevator, later.assigned_elevator), (0, 1))
 
 
