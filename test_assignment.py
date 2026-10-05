@@ -6,7 +6,7 @@ from passenger import Passenger
 
 
 def elevator_carrying_up(id: int, floor: int, destination: int) -> Elevator:
-    """An elevator at `floor` with one rider aboard, heading up to `destination`."""
+    """An elevator at `floor` with one rider aboard, going up to `destination`."""
     elevator = Elevator(id=id, capacity=10, floor=floor)
     rider = Passenger(f'rider{id}', request_time=0, source=floor, destination=destination)
     elevator.assign(rider)
@@ -62,13 +62,13 @@ class NearestElevatorTest(unittest.TestCase):
         alice = Passenger('alice', request_time=0, source=15, destination=2)
         self.assertEqual(floors_until_pickup(elevator, alice), 10 + 5)  # up to 20, back down to 15
 
-    def test_a_close_elevator_heading_away_loses_to_a_farther_empty_elevator(self):
+    def test_a_close_elevator_going_away_loses_to_a_farther_empty_elevator(self):
         elevators = [elevator_carrying_up(id=0, floor=10, destination=20), Elevator(id=1, capacity=10, floor=3)]
         alice = Passenger('alice', request_time=0, source=8, destination=12)
         # Plain distance would pick elevator 0 (2 floors); it must first go to 20, so 22.
         self.assertIs(NearestElevator().choose(elevators, alice, time=0), elevators[1])  # 5 floors
 
-    def test_an_empty_elevator_heading_to_a_pickup_away_loses_to_a_farther_idle_elevator(self):
+    def test_an_empty_elevator_going_away_to_a_pickup_loses_to_a_farther_idle_elevator(self):
         # Elevator 0 at 10 is empty but must first go up to Alice at 30; Bob at 9 is going down.
         elevators = [Elevator(id=0, capacity=10, floor=10), Elevator(id=1, capacity=10, floor=17)]
         elevators[0].assign(Passenger('alice', request_time=0, source=30, destination=31))

@@ -19,7 +19,7 @@ class Elevator:
 
         None when the elevator is empty: it is free to go either way, and the
         service order's next target decides where it moves.
-        An elevator never reverses with riders aboard, so every rider is heading the same way.
+        An elevator never reverses with riders aboard, so every rider is going the same way.
         """
         if not self.riders:
             return None
@@ -87,7 +87,7 @@ class Elevator:
             self.move_to(self.floor - 1)
 
     def move_to(self, floor: int) -> None:
-        """Go straight to a floor. Predictions jump this way and count the ticks themselves."""
+        """Go straight to a floor. Forecasts jump this way and count the ticks themselves."""
         # With riders aboard, the floor must be ahead: the elevator never reverses.
         if self.riders and not self.is_ahead(floor, self.direction):
             raise ValueError(f"elevator {self.id} cannot reverse with riders aboard")

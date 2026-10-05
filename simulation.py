@@ -45,7 +45,7 @@ def simulate(
     else:
         chosen_order = SERVICE_ORDERS[service_order]()
     if assignment == 'forecast':
-        # Forecast predicts with the same service order the elevators follow.
+        # Forecast assignment forecasts with the same service order the elevators follow.
         chosen_assignment = ForecastAssignment(chosen_order)
     else:
         chosen_assignment = ASSIGNMENTS[assignment]()
@@ -116,7 +116,7 @@ class Simulation:
 
         Returns every elevator's floor at each tick, starting at tick 0.
         Always ends for checked input: the requests are finite, every elevator has room,
-        and every service order keeps heading for the work it has left.
+        and every service order keeps going to the passengers it has left.
         """
         positions = []
         upcoming = deque(self.passengers)  # requests not yet made

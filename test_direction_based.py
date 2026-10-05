@@ -45,7 +45,7 @@ class DirectionBasedTest(unittest.TestCase):
         self.assertEqual((alice.pickup_time, alice.drop_off_time), (69, 70))
 
     def test_does_not_pick_up_someone_going_the_other_way(self):
-        # Deck direction slide: Bob 5 -> 2 is near but going down; the elevator is sweeping up for Alice.
+        # Deck direction slide: Bob 5 -> 2 is near but going down; the elevator is going up for Alice.
         alice = Passenger('alice', request_time=0, source=30, destination=31)
         bob = Passenger('bob', request_time=0, source=5, destination=2)
         run([alice, bob], DirectionBased(), capacity=1)

@@ -3,7 +3,7 @@ import unittest
 from assignment import RoundRobin
 from elevator import Elevator
 from passenger import Passenger
-from service_order import Forecast, RequestOrder, predict_finish_times
+from service_order import Forecast, RequestOrder, forecast_drop_off_times
 from simulation import Simulation
 
 
@@ -47,28 +47,28 @@ class ForecastTest(unittest.TestCase):
         self.assertEqual((alice.pickup_time, alice.drop_off_time), (2, 19))
         self.assertEqual((bob.pickup_time, bob.drop_off_time), (4, 9))
 
-    def test_predictions_match_what_happens(self):
-        # With nobody pushed back, every first prediction is the actual finish.
+    def test_forecasts_match_what_happens(self):
+        # With nobody pushed back, every first forecast is the actual drop-off time.
         alice, bob = alice_and_bob()
         forecast = Forecast(allowed_delay=0)
         run([alice, bob], forecast)
-        self.assertEqual(forecast.first_predicted_finish, {'alice': alice.drop_off_time, 'bob': bob.drop_off_time})
+        self.assertEqual(forecast.first_forecast, {'alice': alice.drop_off_time, 'bob': bob.drop_off_time})
 
-    def test_first_prediction_is_kept_when_a_newcomer_pushes_back(self):
+    def test_first_forecast_is_kept_when_a_newcomer_pushes_back(self):
         alice, bob = alice_and_bob()
         forecast = Forecast(allowed_delay=None)
         run([alice, bob], forecast)
-        self.assertEqual(forecast.first_predicted_finish['alice'], 38)
+        self.assertEqual(forecast.first_forecast['alice'], 38)
         self.assertEqual(alice.drop_off_time, 40)
 
-    def test_predict_finish_times_leaves_the_real_elevator_unchanged(self):
+    def test_forecast_drop_off_times_leaves_the_real_elevator_unchanged(self):
         elevator = Elevator(id=0, capacity=10)
         alice, bob = alice_and_bob()
         # Bob assigned first, so request order serves Bob, then Alice.
         elevator.assign(bob)
         elevator.assign(alice)
-        predicted_finish = predict_finish_times(elevator, RequestOrder(), time=0)
-        self.assertEqual(predicted_finish, {'bob': 2, 'alice': 40})
+        drop_off_times = forecast_drop_off_times(elevator, RequestOrder(), time=0)
+        self.assertEqual(drop_off_times, {'bob': 2, 'alice': 40})
         self.assertEqual((elevator.floor, elevator.waiting, elevator.riders), (1, [bob, alice], []))
         self.assertIsNone(alice.pickup_time)
 
