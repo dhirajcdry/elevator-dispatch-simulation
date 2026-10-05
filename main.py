@@ -7,6 +7,7 @@ Example:
 
 import argparse
 import csv
+import math
 import os
 import re
 import statistics
@@ -85,7 +86,7 @@ def write_positions(path: str, positions: list[list[int]]) -> None:
 
 
 def print_statistics(passengers: list[Passenger], positions: list[list[int]]) -> None:
-    """Minimum, average and maximum wait, travel and total time, in ticks."""
+    """Wait, travel and total time in ticks, the longest wait, and what each elevator did."""
     if not passengers:
         print('No passengers.')
         return
@@ -95,7 +96,28 @@ def print_statistics(passengers: list[Passenger], positions: list[list[int]]) ->
         ('Travel time', [p.travel_time for p in passengers]),
         ('Total time', [p.total_time for p in passengers]),
     ):
-        print(f'{label:<12} min {min(times):>5}   average {statistics.mean(times):>8.2f}   max {max(times):>5}')
+        print(f'{label:<12} min {min(times):>5}   median {statistics.median(times):>7.1f}   '
+              f'average {statistics.mean(times):>8.2f}   95th percentile {percentile_95(times):>5}   '
+              f'max {max(times):>5}')
+
+    # Who waited longest: the first such passenger in file order.
+    longest = max(passengers, key=lambda p: p.wait_time)
+    print(f'Longest wait: {longest.id} ({longest.source} to {longest.destination}) '
+          f'waited {longest.wait_time} ticks for elevator {longest.assigned_elevator}')
+
+    # How the work was shared: passengers served and floors moved by each elevator.
+    for elevator in range(len(positions[0])):
+        served = sum(1 for p in passengers if p.assigned_elevator == elevator)
+        floors_moved = sum(abs(after[elevator] - before[elevator]) for before, after in zip(positions, positions[1:]))
+        noun = 'passenger' if served == 1 else 'passengers'
+        print(f'Elevator {elevator}: {served} {noun}, moved {floors_moved} floors')
+
+
+def percentile_95(times: list[int]) -> int:
+    """The time that 95% of passengers are at or below: sort, then take the value 95% of the way up."""
+    ordered = sorted(times)
+    position = math.ceil(0.95 * len(ordered)) - 1
+    return ordered[position]
 
 
 def main() -> None:

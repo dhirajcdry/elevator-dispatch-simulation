@@ -1,9 +1,12 @@
+import contextlib
 import csv
+import io
 import os
 import tempfile
 import unittest
 
-from main import check_output_path, read_requests, write_positions
+from main import check_output_path, percentile_95, print_statistics, read_requests, write_positions
+from passenger import Passenger
 
 
 def write_file(folder: str, text: str) -> str:
@@ -96,6 +99,30 @@ class WritePositionsTest(unittest.TestCase):
             with open(path, newline='') as file:
                 rows = list(csv.reader(file))
         self.assertEqual(rows, [['time', 'elevator_0', 'elevator_1'], ['0', '1', '1'], ['1', '2', '1']])
+
+
+class StatisticsTest(unittest.TestCase):
+    def test_percentile_95_is_the_value_95_percent_of_the_way_up(self):
+        self.assertEqual(percentile_95([5]), 5)
+        self.assertEqual(percentile_95(list(range(1, 21))), 19)   # 19 of 20 times are at or below 19
+        self.assertEqual(percentile_95(list(range(1, 101))), 95)
+
+    def test_longest_wait_and_each_elevators_work(self):
+        alice = Passenger('alice', request_time=0, source=1, destination=3)
+        bob = Passenger('bob', request_time=0, source=3, destination=1)
+        for passenger in (alice, bob):
+            passenger.assigned_elevator = 0
+        alice.pickup_time = 0   # waits 0, arrives at 2
+        alice.drop_off_time = 2
+        bob.pickup_time = 2     # waits 2, arrives at 4
+        bob.drop_off_time = 4
+        positions = [[1, 1], [2, 1], [3, 1], [2, 1], [1, 1]]  # elevator 0 goes up 2 and back; elevator 1 stays
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            print_statistics([alice, bob], positions)
+        self.assertIn('Longest wait: bob (3 to 1) waited 2 ticks for elevator 0', output.getvalue())
+        self.assertIn('Elevator 0: 2 passengers, moved 4 floors', output.getvalue())
+        self.assertIn('Elevator 1: 0 passengers, moved 0 floors', output.getvalue())
 
 
 if __name__ == '__main__':
