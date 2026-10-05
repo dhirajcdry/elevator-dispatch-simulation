@@ -1,3 +1,6 @@
+import copy
+
+
 class Passenger:
     """One passenger's request and the times recorded during their journey."""
 
@@ -11,6 +14,10 @@ class Passenger:
         self.assigned_elevator: int | None = None
         self.pickup_time: int | None = None
         self.drop_off_time: int | None = None
+
+    def __deepcopy__(self, memo):
+        # Every attribute is a number, a string or None, so a plain copy is a full copy, and much faster.
+        return copy.copy(self)
 
     @property
     def direction(self) -> str:

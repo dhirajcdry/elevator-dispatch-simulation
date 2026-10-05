@@ -57,6 +57,8 @@ def read_requests(path: str) -> list[tuple[int, str, int, int]]:
                 requests.append((int(value['time']), value['id'], int(value['source']), int(value['dest'])))
     except UnicodeDecodeError:
         raise ValueError(f"{path}: not a UTF-8 text file")
+    except csv.Error as error:
+        raise ValueError(f"{path} line {reader.line_num}: {error}")
     except OSError as error:
         raise ValueError(f"{path}: {error.strerror}")
     return requests
@@ -64,6 +66,8 @@ def read_requests(path: str) -> list[tuple[int, str, int, int]]:
 
 def check_output_path(path: str, input_path: str) -> None:
     """Stop before the run if the position log could not be written."""
+    if not path:
+        raise ValueError("--positions-out needs a file name")
     folder = os.path.dirname(os.path.abspath(path))
     if os.path.isdir(path):
         raise ValueError(f"{path}: is a folder, not a file")
@@ -71,7 +75,10 @@ def check_output_path(path: str, input_path: str) -> None:
         raise ValueError(f"{path}: folder {folder} does not exist")
     if not os.access(folder, os.W_OK):
         raise ValueError(f"{path}: folder {folder} is not writable")
-    if os.path.abspath(path) == os.path.abspath(input_path):
+    if os.path.exists(path) and not os.access(path, os.W_OK):
+        raise ValueError(f"{path}: the file is not writable")
+    # samefile also catches a link to the input file, which comparing the paths would miss.
+    if os.path.exists(path) and os.path.exists(input_path) and os.path.samefile(path, input_path):
         raise ValueError(f"{path}: the position log would overwrite the input file")
 
 

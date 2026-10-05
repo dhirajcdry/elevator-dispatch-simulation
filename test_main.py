@@ -57,6 +57,7 @@ class ReadRequestsTest(unittest.TestCase):
             'time must be a whole number': 'time,id,source,dest\n1_0,a,1,5\n',
             'source must be a whole number': 'time,id,source,dest\n0,a,\u0663,5\n',
             'dest must be a whole number': 'time,id,source,dest\n0,a,1,5.0\n',
+            'field larger than field limit': 'time,id,source,dest\n0,' + 'a' * 200000 + ',1,5\n',
         }
         for message, text in cases.items():
             with self.subTest(message), tempfile.TemporaryDirectory() as folder:
@@ -81,10 +82,18 @@ class CheckOutputPathTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             input_path = write_file(folder, 'time,id,source,dest\n')
             check_output_path(os.path.join(folder, 'positions.csv'), input_path)  # fine
+            link = os.path.join(folder, 'link.csv')
+            os.symlink(input_path, link)
+            read_only = os.path.join(folder, 'read_only.csv')
+            open(read_only, 'w').close()
+            os.chmod(read_only, 0o444)
             cases = {
+                'needs a file name': '',
                 'is a folder': folder,
                 'does not exist': os.path.join(folder, 'missing', 'positions.csv'),
+                'not writable': read_only,
                 'overwrite the input': input_path,
+                'overwrite the input file': link,
             }
             for message, path in cases.items():
                 with self.subTest(message), self.assertRaisesRegex(ValueError, message):
