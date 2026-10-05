@@ -125,7 +125,7 @@ Each cell: the best simple method → forecast for both. "Best simple" is the be
 - Good: one dial between fairness and efficiency, and K is a guarantee.
 - Bad: slower. Only the newcomer's position is chosen, and boarding follows the order strictly, so someone later in the order is not picked up on the way.
 
-**Choosing K.** On the default building (7 traffic types, forecast for both decisions), the average flattens at about K = 80, within about 1% of no limit, and the longest wait is near its lowest there. So K = 80 is the default.
+**Choosing K.** On the default building (7 traffic types, forecast for both decisions), the average flattens at about K = 80, within about 1% of no limit, and the longest wait is near its lowest there. So K = 80 is the default. It was tuned on this building and these traffic types; for another building or load, the same sweep would find the K that best balances fairness and efficiency there.
 
 ### Can anyone wait forever?
 
@@ -142,7 +142,7 @@ The assignment decides how crowded your elevator gets; only the service order de
 - **An outside rule check** (`python3 experiments/check.py`, about 50 seconds). It covers 270 runs: every traffic type, every method pair and 3 buildings. It reads only the position log and each passenger's times, and checks floors, one floor per tick, pickups and drop-offs where the elevator was, capacity and direction. It was tested by corrupting runs on purpose.
 - **No peeking:** removing every request after a tick T leaves the log up to T unchanged.
 - **K holds:** nobody is dropped off more than K ticks after their first forecast.
-- **Independent reviews:** reviewers with only this repo and the assignment ran about 7,000 more runs with their own traffic and checks. Nothing broke, every forecast matched what happened, and every hand-worked case matched. The data is in [`experiments/data/`](experiments/data/).
+- **Independent checks:** separate runs with their own traffic and rule checks. Nothing broke, every forecast matched what happened, and every hand-worked case matched. The data is in [`experiments/data/`](experiments/data/).
 - **Refactors changed nothing:** every speed-up was checked against the previous version on 1,490 runs.
 
 ## Assumptions
@@ -160,16 +160,18 @@ The assignment decides how crowded your elevator gets; only the service order de
 
 Default building, random traffic between floors, one run at a time on an Apple M4 Pro:
 
-| Passengers | Methods | Seconds |
-| --- | --- | --- |
-| 1,000 spread over time | forecast / forecast | 1.4 |
-| 20,000 spread over time | forecast / forecast | 33 |
-| 5,000 spread over time | forecast / request order | 59 |
-| 200 all at tick 0 | forecast / forecast | 3.7 |
-| 500 all at tick 0 | forecast / forecast | 51 |
-| 20,000 spread over time | nearest / direction-based | 0.25 |
+| Passengers | Methods | Seconds | Per passenger |
+| --- | --- | ---: | ---: |
+| 1,000 spread over time | forecast / forecast | 1.4 | 1.4 ms |
+| 20,000 spread over time | forecast / forecast | 33 | 1.6 ms |
+| 5,000 spread over time | forecast / request order | 59 | 12 ms |
+| 200 all at tick 0 | forecast / forecast | 3.7 | 18 ms |
+| 500 all at tick 0 | forecast / forecast | 51 | 100 ms |
+| 20,000 spread over time | nearest / direction-based | 0.25 | 0.01 ms |
 
-Delivered passengers drop out of every calculation, so the cost depends on **how many are waiting per elevator**, not on how many have been served. While the elevators keep up, every method grows in step with the number of passengers. Forecast slows down when a queue builds: everyone at tick 0, or more traffic than the elevators can carry. Forecast / request order is slow for the same reason: request order lets the queue grow. The reviewers' 736 timing runs, with their inputs, are in `experiments/data/`.
+A real building handles requests one at a time as they arrive, so the time per passenger (the run's seconds divided by its passengers) is roughly what each decision costs. Even the slowest case here is about a tenth of a second.
+
+Delivered passengers drop out of every calculation, so the cost depends on **how many are waiting per elevator**, not on how many have been served. While the elevators keep up, every method grows in step with the number of passengers. Forecast slows down when a queue builds: everyone at tick 0, or more traffic than the elevators can carry. Forecast / request order is slow for the same reason: request order lets the queue grow. The timing runs, with their inputs, are in `experiments/data/`.
 
 **Big O.**
 
@@ -222,5 +224,5 @@ About 1.5 to 2 days.
 | `experiments/traffic.py` | seeded synthetic traffic, 10 types |
 | `experiments/compare.py` | every method pair on every traffic type; writes `results.md` |
 | `experiments/check.py` | checks every rule from the outputs alone |
-| `experiments/data/` | the independent reviews' raw data |
+| `experiments/data/` | raw data from the independent checks |
 | `requests.csv` | the assignment's example input |

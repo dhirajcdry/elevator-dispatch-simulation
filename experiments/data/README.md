@@ -1,6 +1,6 @@
-# Review data
+# Check data
 
-Raw results from independent reviews of this repo. The reviewers started from a fresh clone of the public repo at commit `90a5870` and had only the code and the assignment. About 7,000 runs in all, one row per run. All traffic is synthetic and seeded.
+Raw results from independent checks of this repo, one row per run. All traffic is synthetic and seeded.
 
 | File | Rows | What it is |
 | --- | ---: | --- |
