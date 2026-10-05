@@ -39,7 +39,7 @@ class ForecastAssignment:
     """The elevator whose combined total time goes up the least by taking the passenger.
 
     For each elevator, forecast everyone's drop-off times with and without the newcomer,
-    using the building's own service order, so forecasts match what will happen.
+    using the same service order the elevators follow, so forecasts match what will happen.
     Equally good elevators: the least busy, then the lowest elevator number (as for nearest elevator).
     """
 
