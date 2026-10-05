@@ -27,7 +27,7 @@ class Passenger:
     @property
     def travel_time(self) -> int | None:
         """Time spent inside the elevator, available after drop-off."""
-        if self.pickup_time is None or self.drop_off_time is None:
+        if self.drop_off_time is None:
             return None
         return self.drop_off_time - self.pickup_time
 

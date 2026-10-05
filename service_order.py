@@ -293,16 +293,13 @@ def predict_finish_times(car: Elevator, service_order, time: int, newcomer: Pass
             car.pick_up(passenger, time)
         if not car.riders and not car.waiting:
             return predicted_finish
+        # No new requests arrive during a prediction, so nothing can happen between
+        # possible stops: go straight to the next one, counting one tick per floor.
+        # (The real simulation never does this: it moves one floor per tick.)
         target = service_order.next_target(car)
-        if target is None or target == car.floor:
-            time += 1  # stays put for one tick
-        else:
-            # No new requests arrive during a prediction, so nothing can happen between
-            # possible stops: go straight to the next one, counting one tick per floor.
-            # (The real simulation never does this: it moves one floor per tick.)
-            stop = next_possible_stop(car, target, service_order.possible_stops(car))
-            time += abs(stop - car.floor)
-            car.move_to(stop)
+        stop = next_possible_stop(car, target, service_order.possible_stops(car))
+        time += abs(stop - car.floor)
+        car.move_to(stop)
         for passenger in car.drop_off(time):
             predicted_finish[passenger.id] = time
 

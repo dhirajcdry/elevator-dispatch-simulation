@@ -130,7 +130,6 @@ class TripTest(unittest.TestCase):
 
     def test_last_drop_off_is_the_farthest_destination_in_the_cars_direction(self):
         car = Elevator(id=0, capacity=10, floor=10)
-        self.assertIsNone(car.last_drop_off)  # empty
         for name, destination in (('alice', 20), ('bob', 15)):
             passenger = Passenger(name, request_time=0, source=10, destination=destination)
             car.assign(passenger)

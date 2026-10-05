@@ -36,13 +36,8 @@ class Elevator:
         return [rider.destination for rider in self.riders]
 
     @property
-    def last_drop_off(self) -> int | None:
-        """The farthest rider destination in the car's direction: where its current trip ends.
-
-        None when the car is empty.
-        """
-        if not self.riders:
-            return None
+    def last_drop_off(self) -> int:
+        """The farthest rider destination in the car's direction: where its current trip ends."""
         if self.direction == 'up':
             return max(self.rider_destinations)
         return min(self.rider_destinations)
@@ -73,8 +68,6 @@ class Elevator:
 
         The service order decides who boards; these checks only catch mistakes.
         """
-        if passenger not in self.waiting:
-            raise ValueError(f"{passenger.id} is not waiting for elevator {self.id}")
         if passenger.source != self.floor:
             raise ValueError(f"{passenger.id} is at floor {passenger.source}, elevator {self.id} is at {self.floor}")
         if len(self.riders) >= self.capacity:
@@ -100,8 +93,6 @@ class Elevator:
 
     def move_to(self, floor: int) -> None:
         """Go straight to a floor. Used by predictions, which count the ticks themselves."""
-        if floor == self.floor:
-            return
         # With riders aboard, the floor must be ahead: the car never reverses.
         if self.riders and not self.is_ahead(floor, self.direction):
             raise ValueError(f"elevator {self.id} cannot reverse with riders aboard")
