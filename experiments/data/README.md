@@ -6,7 +6,7 @@ Raw results from independent checks of this repo, one row per run. All traffic i
 | --- | ---: | --- |
 | `perf_runs.csv` | 736 | Performance: wall time, peak memory and results for every method pair, 100 to 20,000 passengers, 20 to 500 floors, 1 to 10 elevators, spread out or all at tick 0 |
 | `perf_inputs/` | 65 files | The exact request CSVs behind `perf_runs.csv` (run any of them with `python3 main.py`) |
-| `perf_gen.py` | | The generator for those inputs: `python3 perf_gen.py interfloor 2000 spread 100 1 out.csv` |
+| `../perf_gen.py` | | The generator for those inputs: `python3 experiments/perf_gen.py interfloor 2000 spread 100 1 out.csv` |
 | `fuzz_runs.csv` | 3,888 | Rule checks: 18 traffic shapes, floors 2 to 100, 1 to 10 elevators, capacity 1 to 1,000, K = 0, 5, 80 and none. Every run passed every check |
 | `quality_runs.csv` | 2,304 | Method comparison: average, median, 95th percentile and longest wait and total, rule and K checks, forecast against actual, no-peeking check |
 | `starvation.csv` | 269 | A long trip among a stream of short trips, by stream length: how long the long trip waits under each method |

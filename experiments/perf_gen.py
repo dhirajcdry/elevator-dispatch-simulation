@@ -7,7 +7,7 @@ make_workload(pattern, passengers, arrival, floors, seed) -> list of (time, id, 
   arrival:  spread (first request at tick 0, then a gap of 1, 2 or 3 ticks, uniform, between
             consecutive requests: about 0.5 requests per tick) or tick0 (every request at tick 0)
 The RNG is random.Random(f'{pattern}-{passengers}-{arrival}-{floors}-{seed}').
-Running this file writes the CSV for one workload:  python3 perf_gen.py pattern n arrival floors seed out.csv
+Running this file writes the CSV for one workload:  python3 experiments/perf_gen.py pattern n arrival floors seed out.csv
 """
 import csv
 import random

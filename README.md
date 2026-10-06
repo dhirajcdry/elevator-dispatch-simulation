@@ -258,11 +258,12 @@ About 1.5 to 2 days.
 | `assignment.py` | round robin, nearest elevator, forecast assignment |
 | `service_order.py` | request order, direction-based, forecast service order, and the forecast itself |
 | `elevator.py`, `passenger.py` | an elevator and a passenger |
-| `test_*.py` | unit tests |
+| `tests/` | unit tests |
 | `experiments/traffic.py` | seeded synthetic traffic, 10 types |
 | `experiments/compare.py` | every method pair on every traffic type; writes `results.md` |
 | `experiments/check.py` | checks every rule from the outputs alone |
 | `experiments/chart_data.py` | runs the simulations behind the charts; writes `data/charts.json` |
+| `experiments/perf_gen.py` | makes the timing inputs in `data/perf_inputs/` |
 | `experiments/data/` | raw data from the independent checks and the charts |
 | `images/` | the charts in this README, light and dark |
 | `requests.csv` | the assignment's example input |
