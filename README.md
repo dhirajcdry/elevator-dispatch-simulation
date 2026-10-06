@@ -115,6 +115,14 @@ Forecast for both against the best simple method for each traffic type: the best
 </picture>
 
 - **Forecast has the best average on every traffic type**, tying only on lobby bursts, and cuts the longest wait by roughly 30 to 70% everywhere except the long trip in a stream.
+
+Every pair of methods, random trips between floors (mean of 5 runs):
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="images/nine-combinations-dark.svg">
+  <img alt="Average total time for every pair of elevator assignment and service order" src="images/nine-combinations-light.svg">
+</picture>
+
 - **Elevator assignment is the bigger lever.** With direction-based service, switching the assignment from round robin to forecast cuts trips between random floors from 128 to 73; switching the service order to forecast then gives 71.
 - **Forecast's service order earns its place on the worst case.** With forecast assignment, it cuts the longest wait from 467 to 318 in heavy traffic and from 490 to 236 in the evening rush.
 - **Request order collapses under load:** an elevator carries about one rider per trip (heavy traffic: 2,984 with round robin / request order, against 150 with forecast for both).
