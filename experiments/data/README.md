@@ -10,6 +10,7 @@ Raw results from independent checks of this repo, one row per run. All traffic i
 | `fuzz_runs.csv` | 3,888 | Rule checks: 18 traffic shapes, floors 2 to 100, 1 to 10 elevators, capacity 1 to 1,000, K = 0, 5, 80 and none. Every run passed every check |
 | `quality_runs.csv` | 2,304 | Method comparison: average, median, 95th percentile and longest wait and total, rule and K checks, forecast against actual, no-peeking check |
 | `starvation.csv` | 269 | A long trip among a stream of short trips, by stream length: how long the long trip waits under each method |
+| `charts.json` | | The data behind the README charts, written by `python3 experiments/chart_data.py`: every method pair and every allowed delay on every traffic type (5 seeds), and each passenger's times in heavy traffic |
 
 ## Timing
 
